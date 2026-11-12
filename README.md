@@ -36,3 +36,7 @@
 - Celý plán kampaně (doména, měření, CRO, Google Ads/Sklik/Meta, bannery, SEO): `KAMPAN-CEZ.md`. Texty reklam + kontrola délek: `python3 kampan/ads.py --md`. Bannery: `kampan/bannery/`.
 - Měření je vypnuté, dokud nejsou vyplněné proměnné repozitáře `GA4_ID`, `GADS_ID`, `GADS_LEAD_LABEL`, `GADS_CALL_LABEL`, `SKLIK_CONV_ID`, `SKLIK_RTG_ID`, `META_PIXEL_ID` (bez nich žádný skript ani cookie lišta). S nimi: Consent Mode v2 (výchozí odmítnuto), cookie lišta, nástroje se načtou až po souhlasu, konverze `lead` na děkovné stránce po potvrzení CRM.
 - Vlastní doména: proměnná `CUSTOM_DOMAIN` (např. `www.zmenitdodavatele.cz`) → build bez `/leadweb`, s `CNAME`; v Settings → Pages nastavit stejnou doménu.
+
+## Vzhled
+
+Design 2026: `src/style.css` (bez frameworku, mobile-first), ikony inline SVG ve stylu Lucide (`src/icons.mjs`), písmo Inter (SIL OFL) v podmnožině pro češtinu v `src/fonts/` (~41 kB, kopíruje se do `public/fonts/`). Odpočet dní do lhůty doplňuje `app.js` do `.cd-num` z `data-deadline`.

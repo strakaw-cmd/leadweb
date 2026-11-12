@@ -74,6 +74,8 @@
     const [y, mo, d] = el.dataset.deadline.split('-').map(Number), n = new Date(), sp = el.querySelector('.dleft');
     const days = Math.round((Date.UTC(y, mo - 1, d) - Date.UTC(n.getFullYear(), n.getMonth(), n.getDate())) / 864e5);
     if (sp && days >= 0) sp.textContent = days === 0 ? ' – dnes je poslední den' : days === 1 ? ' – zbývá 1 den' : ` – zbývají ${days} dny`.replace(/zbývají (\d+) dny/, (m, k) => (k >= 5 ? `zbývá ${k} dní` : m));
+    const box = el.querySelector('.cd-num');
+    if (box && days >= 0) { box.querySelector('.cd-n').textContent = days === 0 ? 'dnes' : days; box.querySelector('.cd-k').textContent = days === 0 ? 'poslední den' : days >= 2 && days <= 4 ? 'zbývají' : 'zbývá'; box.querySelector('.cd-u').textContent = days === 0 ? '' : days === 1 ? 'den' : days <= 4 ? 'dny' : 'dní'; box.hidden = false; el.classList.add('on'); }
   });
 
   // ---- kvíz Zdražení ČEZ (fakta: src/cez.mjs, předávají se přes data-*) ----
