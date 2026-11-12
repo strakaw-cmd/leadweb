@@ -1,0 +1,6 @@
+{
+ "name": "leadweb",
+ "private": true,
+ "type": "module",
+ "scripts": {"build": "node src/build.mjs", "start": "node src/build.mjs && node server.js"}
+}
