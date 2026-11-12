@@ -16,6 +16,14 @@ const BASE = (process.env.BASE_PATH || '').replace(/\/$/, '');
 const STATIC = process.env.STATIC === '1';
 const OPERATOR = 'Václav Straka, IČO 86776606, Emilie Floriánové 724/21, 466 01 Jablonec nad Nisou';
 const CONTACT_EMAIL = 'info@porovnanienergii.cz';
+// Měření (GA4, Google Ads, Sklik, Meta) – zapíná se jen vyplněním ID v prostředí buildu (GitHub: Settings → Variables).
+// Prázdná ID = žádný skript, žádná cookie lišta, web beze změny. Consent Mode v2 v základním režimu: nic se nenačte před souhlasem.
+const TRACK_RULES = { ga4: [/^G-[A-Z0-9]{4,}$/, 'GA4_ID'], ads: [/^AW-\d{6,}$/, 'GADS_ID'], adsLead: [/^[\w-]{6,}$/, 'GADS_LEAD_LABEL'], adsCall: [/^[\w-]{6,}$/, 'GADS_CALL_LABEL'],
+  sklik: [/^\d{3,}$/, 'SKLIK_CONV_ID'], sklikRtg: [/^\d{3,}$/, 'SKLIK_RTG_ID'], meta: [/^\d{8,}$/, 'META_PIXEL_ID'] };
+const TRACK = {};
+for (const [k, [re, env]] of Object.entries(TRACK_RULES)) { const v = (process.env[env] || '').trim(); if (!v) continue; if (!re.test(v)) throw new Error(`Neplatná hodnota ${env}: ${v}`); TRACK[k] = v; }
+const TRACKING = !!(TRACK.ga4 || TRACK.ads || TRACK.sklik || TRACK.sklikRtg || TRACK.meta);
+const trackHead = TRACKING ? `<script>window.TRACK=${JSON.stringify(TRACK)};window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',functionality_storage:'granted',security_storage:'granted'});gtag('set','ads_data_redaction',true);</script>\n` : '';
 const withBase = (h) => h.replace(/(href|src|data-thanks)="\/(?!\/)/g, `$1="${BASE}/`).replace('<html lang="cs">', `<html lang="cs" data-base="${BASE}"${STATIC ? ' data-static="1"' : ''}>`);
 const write = (rel, s) => { const f = path.join(OUT, rel); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, rel.endsWith('.html') ? withBase(s) : s); };
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -25,15 +33,15 @@ const calcs = [
   ['uspora-plyn', 'Kalkulačka úspory za plyn'],
   ['termin-vypovedi', 'Kdy podat výpověď'],
 ];
-function layout({ title, desc, body, canonical = '' }) {
+function layout({ title, desc, body, canonical = '', funnel = false }) {
   return `<!doctype html><html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title><meta name="description" content="${esc(desc)}">
 ${SITE_URL ? `<link rel="canonical" href="${SITE_URL}${canonical}">` : '<meta name="robots" content="noindex">'}
-<link rel="stylesheet" href="/style.css"><link rel="icon" href="/favicon.svg" type="image/svg+xml"></head><body>
-<header class="top"><div class="wrap"><a class="logo" href="/">⚡ ${BRAND}</a><nav><a href="/zdrazeni-cez">Zdražení ČEZ</a><a href="/pruvodce/">Průvodci</a><a href="/kalkulacky/">Kalkulačky</a><a class="btn sm" href="/#poptavka">Chci nabídku</a></nav></div></header>
+${trackHead}<link rel="stylesheet" href="/style.css"><link rel="icon" href="/favicon.svg" type="image/svg+xml"></head><body>
+<header class="top"><div class="wrap"><a class="logo" href="/">⚡ ${BRAND}</a><nav><a href="/zdrazeni-cez">Zdražení ČEZ</a><a class="nav-x" href="/pruvodce/">Průvodci</a><a class="nav-x" href="/kalkulacky/">Kalkulačky</a><a class="btn sm" href="${funnel ? '#poptavka' : '/#poptavka'}">Chci nabídku</a></nav></div></header>
 <main class="wrap">${body}</main>
 <footer><div class="wrap"><p><strong>${BRAND}</strong> – průvodce změnou dodavatele elektřiny a plynu. Provozovatel: ${OPERATOR}.</p>
-<p><a href="/ochrana-osobnich-udaju">Ochrana osobních údajů</a> · Web nepoužívá cookies ani reklamní sledování. · Ceny konkrétních dodavatelů neuvádíme – pro nezávislé srovnání veřejných nabídek viz <a href="https://srovnavac.eru.gov.cz/" target="_blank" rel="noopener">srovnávač ERÚ</a>.</p></div></footer>
+<p><a href="/ochrana-osobnich-udaju">Ochrana osobních údajů</a> · ${TRACKING ? '<a href="#cookies" data-consent-open>Nastavení cookies</a>' : 'Web nepoužívá cookies ani reklamní sledování.'} · Ceny konkrétních dodavatelů neuvádíme – pro nezávislé srovnání veřejných nabídek viz <a href="https://srovnavac.eru.gov.cz/" target="_blank" rel="noopener">srovnávač ERÚ</a>.</p></div></footer>
 <script src="/app.js" defer></script></body></html>`;
 }
 const leadForm = (id = 'poptavka', o = {}) => `
@@ -54,8 +62,20 @@ const leadForm = (id = 'poptavka', o = {}) => `
 <label>Poznámka (nepovinné)<textarea name="note" rows="2" placeholder="např. kdy končí fixace, kdy se vám hodí zavolat"></textarea></label>
 <div class="hp" aria-hidden="true"><label>Web<input name="website" tabindex="-1" autocomplete="off"></label></div>
 <label class="ch gdpr"><input type="checkbox" name="gdpr" required> Souhlasím se zpracováním uvedených osobních údajů za účelem kontaktování a přípravy nabídky energií. Správce: Václav Straka, IČO 86776606. Souhlas mohu kdykoli odvolat. <a href="/ochrana-osobnich-udaju" target="_blank">Více o zpracování</a>.</label>
-<button class="btn" type="submit">Odeslat a chci zavolat</button><div class="status" role="status" aria-live="polite"></div>
+<button class="btn" type="submit">Chci nezávazné srovnání zdarma</button><div class="status" role="status" aria-live="polite"></div>
+<p class="muted reassure">Ozveme se zpravidla do jednoho pracovního dne. Nic nepodepisujete a za naši službu neplatíte. Raději voláte? <a href="tel:+420737225960">737 225 960</a> (Po–Pá 8–17)</p>
 </form></section>`;
+
+function cookiePolicy() {
+  const rows = [];
+  if (TRACK.ga4) rows.push(['Google Analytics 4 (Google Ireland Ltd.)', 'Analytické', 'Měření návštěvnosti a toho, které stránky vedou k poptávce. Cookies _ga, _ga_*; až 2 roky.']);
+  if (TRACK.ads) rows.push(['Google Ads (Google Ireland Ltd.)', 'Marketingové', 'Měření konverzí z reklam a remarketing. Cookies _gcl_*, případně cookies Google; až 90 dní / podle Google.']);
+  if (TRACK.sklik || TRACK.sklikRtg) rows.push(['Sklik (Seznam.cz, a.s.)', 'Marketingové', 'Měření konverzí z reklam Sklik' + (TRACK.sklikRtg ? ' a retargeting' : '') + '. Cookies Seznamu (např. sid); podle Seznam.cz.']);
+  if (TRACK.meta) rows.push(['Meta Pixel (Meta Platforms Ireland Ltd.)', 'Marketingové', 'Měření konverzí z reklam na Facebooku a Instagramu. Cookie _fbp; až 90 dní.']);
+  return `<p>Nezbytné úložiště (bez souhlasu) používáme jen pro zapamatování vaší volby cookies a parametrů kampaně v rámci návštěvy. Analytické a marketingové nástroje spouštíme <strong>až po vašem souhlasu</strong> (Google Consent Mode v2, výchozí stav „odmítnuto“). Souhlas můžete kdykoli změnit nebo odvolat v <a href="#cookies" data-consent-open>nastavení cookies</a>.</p>
+<table><tr><th>Nástroj</th><th>Kategorie</th><th>Účel a doba</th></tr>${rows.map((r) => `<tr><td>${r.join('</td><td>')}</td></tr>`).join('')}</table>
+<p class="muted">Při souhlasu s marketingovými cookies se údaje o návštěvě a odeslání formuláře (bez jména, telefonu a e-mailu) předávají uvedeným poskytovatelům, kteří mohou data zpracovávat i mimo EU na základě standardních smluvních doložek / EU-US Data Privacy Framework. Právní základ: souhlas (čl. 6 odst. 1 písm. a GDPR, § 89 odst. 3 zákona č. 127/2005 Sb.).</p>`;
+}
 
 // ---------- domů ----------
 const artCards = articles.map((a) => `<a class="card" href="/pruvodce/${a.slug}"><h3>${esc(a.title)}</h3><p>${esc(a.desc)}</p></a>`).join('');
@@ -127,8 +147,8 @@ write('ochrana-osobnich-udaju.html', layout({ title: `Ochrana osobních údajů 
 <h2>Kde údaje ukládáme</h2><p>${STATIC ? 'Údaje se z formuláře odešlou přímo' : 'Údaje se uloží na serveru tohoto webu a předají se'} do zákaznického systému (CRM) porovnanienergii.cz, ve kterém s nimi pracují osoby pověřené správcem. Údaje nepředáváme k reklamním účelům třetím stranám.</p>
 <h2>Jak dlouho</h2><p>Po dobu nezbytnou k vyřízení poptávky, nejdéle 2 roky od posledního kontaktu, pokud nevznikne smluvní vztah.</p>
 <h2>Vaše práva</h2><p>Máte právo souhlas kdykoli odvolat, požadovat přístup k údajům, jejich opravu, výmaz, omezení zpracování a přenositelnost a podat stížnost u Úřadu pro ochranu osobních údajů (uoou.gov.cz).</p>
-<h2>Cookies a měření návštěvnosti</h2><p>Web nepoužívá cookies${STATIC ? ' ani nástroje pro měření návštěvnosti.' : '. Návštěvnost měříme anonymně na vlastním serveru: ukládáme navštívenou stránku, odkazující doménu a denně se měnící anonymní identifikátor, ze kterého nelze zpětně zjistit IP adresu ani vás identifikovat.'}</p></article>` }));
-write('dekujeme.html', layout({ title: `Děkujeme | ${BRAND}`, desc: 'Děkujeme za zprávu.', body: `<h1>Děkujeme</h1><p>Vaše údaje máme. Ozveme se vám zpravidla do jednoho pracovního dne.</p><p><a href="/pruvodce/">Zatím si přečtěte naše průvodce</a></p>` }));
+<h2>Cookies a měření návštěvnosti</h2>${TRACKING ? cookiePolicy() : `<p>Web nepoužívá cookies${STATIC ? ' ani nástroje pro měření návštěvnosti.' : '. Návštěvnost měříme anonymně na vlastním serveru: ukládáme navštívenou stránku, odkazující doménu a denně se měnící anonymní identifikátor, ze kterého nelze zpětně zjistit IP adresu ani vás identifikovat.'}</p>`}</article>` }));
+write('dekujeme.html', layout({ title: `Děkujeme | ${BRAND}`, desc: 'Děkujeme za zprávu.', body: `<h1 data-thanks-page>Děkujeme</h1><p>Vaše údaje máme. Ozveme se vám zpravidla do jednoho pracovního dne.</p><p><a href="/pruvodce/">Zatím si přečtěte naše průvodce</a></p>` }));
 write('404.html', layout({ title: `Stránka nenalezena | ${BRAND}`, desc: '', body: `<h1>Tuhle stránku jsme nenašli</h1><p><a href="/">Zpět na úvod</a></p>` }));
 write('robots.txt', SITE_URL ? `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}/sitemap.xml\n` : 'User-agent: *\nDisallow: /\n');
 const funnelUrls = buildFunnel({ write, layout, leadForm, esc });
@@ -137,4 +157,5 @@ write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http:
 write('favicon.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#0b6e4f"/><path d="M13 3 6 13h5l-1 8 7-10h-5z" fill="#ffd23f"/></svg>');
 for (const f of ['style.css', 'app.js']) fs.copyFileSync(path.join(ROOT, 'src', f), path.join(OUT, f));
 if (STATIC) write('.nojekyll', '');
-console.log('built', urls.length, 'pages', BASE ? `base ${BASE}` : '', STATIC ? 'static' : '');
+if (process.env.CUSTOM_DOMAIN) write('CNAME', process.env.CUSTOM_DOMAIN.trim() + '\n');
+console.log('built', urls.length, 'pages', BASE ? `base ${BASE}` : '', STATIC ? 'static' : '', TRACKING ? 'tracking ' + Object.keys(TRACK).join(',') : 'no-tracking');

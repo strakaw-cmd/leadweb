@@ -5,9 +5,76 @@
   const utm = {}; const sp = new URLSearchParams(location.search);
   for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid']) { const v = sp.get(k) || sessionStorage.getItem('u_' + k); if (v) { utm[k] = v; sessionStorage.setItem('u_' + k, v); } }
 
-  // Události funnelu jen tam, kde běží vlastní backend (server.js / Cloudflare). Na statickém hostingu (GitHub Pages) se tiše nic neposílá.
-  const ev = STATIC ? () => {} : (e, extra = {}) => { try { const b = JSON.stringify({ e, p: location.pathname, ...extra }); navigator.sendBeacon ? navigator.sendBeacon(B + '/api/event', new Blob([b], { type: 'application/json' })) : fetch(B + '/api/event', { method: 'POST', body: b, keepalive: true }).catch(() => {}); } catch {} };
+  // ---- měření se souhlasem (aktivní jen když build vložil window.TRACK; jinak vše níže nic nedělá) ----
+  const T = window.TRACK || null, CK = 'consent_v1';
+  const M = { a: false, m: false, loaded: {}, queue: [] };
+  const getConsent = () => { try { return JSON.parse(localStorage.getItem(CK) || 'null'); } catch { return null; } };
+  const addScript = (src) => { const s = document.createElement('script'); s.async = true; s.src = src; document.head.appendChild(s); return s; };
+  function applyConsent(c) {
+    if (!T || !c) return;
+    M.a = !!c.a; M.m = !!c.m;
+    const g = (v) => (v ? 'granted' : 'denied');
+    window.gtag('consent', 'update', { analytics_storage: g(M.a), ad_storage: g(M.m), ad_user_data: g(M.m), ad_personalization: g(M.m) });
+    const needG = (M.a && T.ga4) || (M.m && T.ads);
+    if (needG && !M.loaded.g) { M.loaded.g = 1; addScript('https://www.googletagmanager.com/gtag/js?id=' + (T.ga4 || T.ads)); window.gtag('js', new Date()); }
+    if (M.a && T.ga4 && !M.loaded.ga4) { M.loaded.ga4 = 1; window.gtag('config', T.ga4); }
+    if (M.m && T.ads && !M.loaded.ads) { M.loaded.ads = 1; window.gtag('config', T.ads); }
+    if (M.m && (T.sklik || T.sklikRtg) && !M.loaded.rc) { M.loaded.rc = 1; const s = addScript('https://c.seznam.cz/js/rc.js'); s.onload = () => { if (T.sklikRtg && window.rc && window.rc.retargetingHit) window.rc.retargetingHit({ rtgId: Number(T.sklikRtg), consent: 1 }); flush(); }; }
+    if (M.m && T.meta && !M.loaded.fb) { M.loaded.fb = 1;
+      const f = window.fbq = function () { f.callMethod ? f.callMethod.apply(f, arguments) : f.queue.push(arguments); }; if (!window._fbq) window._fbq = f; f.push = f; f.loaded = true; f.version = '2.0'; f.queue = [];
+      addScript('https://connect.facebook.net/en_US/fbevents.js'); window.fbq('init', T.meta); window.fbq('track', 'PageView'); }
+    flush();
+  }
+  function flush() { const q = M.queue.splice(0); q.forEach((fn) => { if (!fn()) M.queue.push(fn); }); }
+  // Konverze: lead = odeslaný formulář potvrzený CRM (značka v sessionStorage, odpálí se na děkovné stránce, jednou), phone = klik na telefon.
+  function conv(kind, p = {}) {
+    if (!T) return;
+    if (M.a && T.ga4) window.gtag('event', kind === 'lead' ? 'generate_lead' : 'phone_click', { send_to: T.ga4, ...p });
+    if (M.m && T.ads) { const l = kind === 'lead' ? T.adsLead : T.adsCall; if (l) window.gtag('event', 'conversion', { send_to: T.ads + '/' + l }); }
+    if (M.m && T.meta && window.fbq) window.fbq('track', kind === 'lead' ? 'Lead' : 'Contact');
+    if (M.m && T.sklik && kind === 'lead') M.queue.push(() => { if (!(window.rc && window.rc.conversionHit)) return false; window.rc.conversionHit({ id: Number(T.sklik), value: null, consent: 1 }); return true; });
+    flush();
+  }
+  function banner() {
+    if (!T) return;
+    let el = document.getElementById('cookiebar');
+    if (!el) {
+      el = document.createElement('div'); el.id = 'cookiebar'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Nastavení cookies');
+      el.innerHTML = '<p><strong>Cookies</strong> – s vaším souhlasem použijeme analytické cookies (měření návštěvnosti) a marketingové cookies (měření reklam). Bez souhlasu web funguje stejně. <a href="' + B + '/ochrana-osobnich-udaju">Podrobnosti</a></p>'
+        + '<div class="cb-opts" hidden><label class="ch"><input type="checkbox" disabled checked> Nezbytné</label><label class="ch"><input type="checkbox" name="a"> Analytické</label><label class="ch"><input type="checkbox" name="m"> Marketingové</label></div>'
+        + '<div class="cb-btns"><button class="btn" data-c="all">Přijmout vše</button><button class="btn" data-c="none">Odmítnout</button><button class="btn ghost" data-c="set">Nastavení</button></div>';
+      document.body.appendChild(el);
+      el.addEventListener('click', (e) => {
+        const b = e.target.closest('button'); if (!b) return;
+        const opts = el.querySelector('.cb-opts');
+        if (b.dataset.c === 'set') { if (opts.hidden) { opts.hidden = false; b.textContent = 'Uložit výběr'; return; } }
+        const c = b.dataset.c === 'all' ? { a: true, m: true } : b.dataset.c === 'none' ? { a: false, m: false } : { a: opts.querySelector('[name=a]').checked, m: opts.querySelector('[name=m]').checked };
+        c.t = new Date().toISOString(); try { localStorage.setItem(CK, JSON.stringify(c)); } catch {}
+        el.hidden = true; applyConsent(c);
+      });
+    }
+    const c = getConsent(); if (c) { el.querySelector('[name=a]').checked = !!c.a; el.querySelector('[name=m]').checked = !!c.m; }
+    el.hidden = false;
+  }
+  if (T) {
+    const c = getConsent(); if (c) applyConsent(c); else banner();
+    document.addEventListener('click', (e) => { if (e.target.closest('[data-consent-open]')) { e.preventDefault(); banner(); } });
+    try { const ok = sessionStorage.getItem('lead_ok'); if (ok && document.querySelector('[data-thanks-page]')) { sessionStorage.removeItem('lead_ok'); conv('lead', JSON.parse(ok)); } } catch {}
+  }
+  document.addEventListener('click', (e) => { const a = e.target.closest('a[href^="tel:"]'); if (a) { conv('phone', { link_url: a.getAttribute('href') }); ev('phone_click', { c: 'zdrazeni-cez' }); } });
+
+  // Události funnelu jen tam, kde běží vlastní backend (server.js / Cloudflare). Na statickém hostingu (GitHub Pages) se na server nic neposílá;
+  // pokud je zapnuté měření a návštěvník souhlasil s analytikou, kroky funnelu jdou do GA4.
+  const beacon = STATIC ? () => {} : (e, extra = {}) => { try { const b = JSON.stringify({ e, p: location.pathname, ...extra }); navigator.sendBeacon ? navigator.sendBeacon(B + '/api/event', new Blob([b], { type: 'application/json' })) : fetch(B + '/api/event', { method: 'POST', body: b, keepalive: true }).catch(() => {}); } catch {} };
+  const ev = (e, extra = {}) => { beacon(e, extra); if (T && M.a && T.ga4) window.gtag('event', e, { send_to: T.ga4, ...extra }); };
   let quizText = '';
+
+  // ---- zbývající dny do lhůty (jen informace z data v cez.mjs; po lhůtě se nic nepřidá) ----
+  document.querySelectorAll('[data-deadline]').forEach((el) => {
+    const [y, mo, d] = el.dataset.deadline.split('-').map(Number), n = new Date(), sp = el.querySelector('.dleft');
+    const days = Math.round((Date.UTC(y, mo - 1, d) - Date.UTC(n.getFullYear(), n.getMonth(), n.getDate())) / 864e5);
+    if (sp && days >= 0) sp.textContent = days === 0 ? ' – dnes je poslední den' : days === 1 ? ' – zbývá 1 den' : ` – zbývají ${days} dny`.replace(/zbývají (\d+) dny/, (m, k) => (k >= 5 ? `zbývá ${k} dní` : m));
+  });
 
   // ---- kvíz Zdražení ČEZ (fakta: src/cez.mjs, předávají se přes data-*) ----
   document.querySelectorAll('section.quiz').forEach((sec) => {
@@ -36,7 +103,7 @@
         if (rows.length && !numeric) html += `<p class="muted">${rows.join(' ')}</p>`;
         if (numeric) html += `<p>Orientační navýšení za samotnou dodávku (s DPH):</p><ul><li>${rows.join('</li><li>')}</li></ul><p class="muted">Podle ceníků ČEZ (elektřina +330 Kč/MWh, u části dvoutarifních sazeb domácností +340 ve VT) a údajů ČEZ pro plyn domácností (+180 Kč/MWh). Bez změn regulované části.</p>`;
         else if (z) html += '<p class="muted">Z výše zálohy navýšení spolehlivě spočítat nejde (záloha je jen odhad). Pro odhad zadejte roční spotřebu z vyúčtování.</p>';
-        html += '<p><a class="btn" href="#poptavka">Chci porovnat nabídky</a></p>';
+        html += '<p><a class="btn" href="#poptavka">Chci porovnat nabídky</a> <a class="btn ghost" href="tel:+420737225960">Zavolat 737 225 960</a></p>';
       }
       out.hidden = false; out.innerHTML = html;
       ev('quiz_done', { c: 'zdrazeni-cez', r });
@@ -68,6 +135,7 @@
     return r.ok && Array.isArray(j) && j.length === 3;
   }
 
+  const markLead = (d) => { if (T) try { sessionStorage.setItem('lead_ok', JSON.stringify({ lead_segment: d.segment, lead_commodity: d.komodita, campaign: d.campaign || 'web' })); } catch {} };
   // ---- lead form ----
   document.querySelectorAll('form.leadform').forEach((f) => {
     const t0 = Date.now(); const st = f.querySelector('.status'); const btn = f.querySelector('button');
@@ -94,12 +162,12 @@
         if (STATIC) {
           // honeypot a minimální čas vyplnění: robotům tváříme úspěch, nic neodesíláme
           if (d.website || Date.now() - t0 < 2500) { location.href = thanks; return; }
-          if (await sendCrm(d)) { location.href = thanks; return; }
+          if (await sendCrm(d)) { markLead(d); location.href = thanks; return; }
           throw new Error('crm');
         }
         const r = await fetch(B + '/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
         const j = await r.json().catch(() => ({}));
-        if (r.ok && j.ok) { location.href = thanks; return; }
+        if (r.ok && j.ok) { markLead(d); location.href = thanks; return; }
         if (j.errors) showErr(j.errors);
         st.textContent = j.error || 'Odeslání se nepovedlo, zkuste to prosím znovu.';
       } catch { st.textContent = 'Odeslání se nepovedlo, zkontrolujte připojení a zkuste to znovu.'; }

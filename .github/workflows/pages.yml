@@ -22,11 +22,22 @@ jobs:
         with:
           node-version: 20
       - name: Build
-        run: node src/build.mjs
+        # Volitelné proměnné repozitáře (Settings → Secrets and variables → Actions → Variables):
+        # CUSTOM_DOMAIN (např. www.zmenitdodavatele.cz), GA4_ID, GADS_ID, GADS_LEAD_LABEL, GADS_CALL_LABEL, SKLIK_CONV_ID, SKLIK_RTG_ID, META_PIXEL_ID.
+        # Bez nich se web staví přesně jako dosud (github.io/leadweb, bez měření a bez cookie lišty).
+        run: |
+          if [ -n "$CUSTOM_DOMAIN" ]; then export SITE_URL="https://$CUSTOM_DOMAIN" BASE_PATH=""; else export SITE_URL="https://strakaw-cmd.github.io/leadweb" BASE_PATH="/leadweb"; fi
+          node src/build.mjs
         env:
-          SITE_URL: https://strakaw-cmd.github.io/leadweb
-          BASE_PATH: /leadweb
           STATIC: "1"
+          CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN }}
+          GA4_ID: ${{ vars.GA4_ID }}
+          GADS_ID: ${{ vars.GADS_ID }}
+          GADS_LEAD_LABEL: ${{ vars.GADS_LEAD_LABEL }}
+          GADS_CALL_LABEL: ${{ vars.GADS_CALL_LABEL }}
+          SKLIK_CONV_ID: ${{ vars.SKLIK_CONV_ID }}
+          SKLIK_RTG_ID: ${{ vars.SKLIK_RTG_ID }}
+          META_PIXEL_ID: ${{ vars.META_PIXEL_ID }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public
