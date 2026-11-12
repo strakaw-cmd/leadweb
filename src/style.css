@@ -24,3 +24,9 @@ label.gdpr{display:flex;font-size:.88rem}.grid2,.grid3{display:grid;gap:0 1rem;g
 .big{font-size:1.4rem;font-weight:800;color:#0b6e4f}.muted{color:#5a6b64;font-size:.9rem}.art{background:#fff;border-radius:14px;padding:1rem 1.5rem 1.5rem;margin-top:1.5rem;border:1px solid #e2ebe6}
 .crumbs{font-size:.9rem;margin:0}.src{border-top:1px solid #e2ebe6;margin-top:2rem}
 footer{margin-top:3rem;background:#eaf2ee;padding:1.5rem 0;font-size:.9rem}
+.callout{background:#fff8e1;border:1px solid #f0c75e;border-left:6px solid #e0a800;border-radius:12px;padding:.8rem 1.1rem;margin:1.2rem 0;font-size:.97rem}
+.quiz{background:#fff;border:1px solid #cfded6;border-radius:16px;padding:1.2rem 1.4rem;margin:2rem 0}.quizres{margin-top:1rem;padding:1rem;border-radius:12px;background:#eef7f2}
+.quizres h3{margin-top:0}.facts-list{background:#fff;border:1px solid #e2ebe6;border-radius:12px;padding:.8rem 1rem .8rem 2rem}
+.faq details{background:#fff;border:1px solid #e2ebe6;border-radius:10px;padding:.6rem 1rem;margin:.5rem 0}.faq summary{font-weight:700;cursor:pointer}
+.split .card h3{font-size:1.2rem}
+@media(max-width:640px){nav{gap:.7rem;font-size:.92rem}nav a{white-space:nowrap}.top .wrap{padding:.4rem 1rem}}

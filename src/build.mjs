@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { articles, SOURCES } from './articles.mjs';
+import { cezCallout } from './cez.mjs';
+import { buildFunnel } from './funnel.mjs';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'public');
@@ -24,22 +26,22 @@ function layout({ title, desc, body, canonical = '' }) {
 <title>${esc(title)}</title><meta name="description" content="${esc(desc)}">
 ${SITE_URL ? `<link rel="canonical" href="${SITE_URL}${canonical}">` : '<meta name="robots" content="noindex">'}
 <link rel="stylesheet" href="/style.css"><link rel="icon" href="/favicon.svg" type="image/svg+xml"></head><body>
-<header class="top"><div class="wrap"><a class="logo" href="/">⚡ ${BRAND}</a><nav><a href="/pruvodce/">Průvodci</a><a href="/kalkulacky/">Kalkulačky</a><a class="btn sm" href="/#poptavka">Chci nabídku</a></nav></div></header>
+<header class="top"><div class="wrap"><a class="logo" href="/">⚡ ${BRAND}</a><nav><a href="/zdrazeni-cez">Zdražení ČEZ</a><a href="/pruvodce/">Průvodci</a><a href="/kalkulacky/">Kalkulačky</a><a class="btn sm" href="/#poptavka">Chci nabídku</a></nav></div></header>
 <main class="wrap">${body}</main>
 <footer><div class="wrap"><p><strong>${BRAND}</strong> – průvodce změnou dodavatele elektřiny a plynu. Provozovatel: ${OPERATOR}.</p>
 <p><a href="/ochrana-osobnich-udaju">Ochrana osobních údajů</a> · Web nepoužívá cookies ani reklamní sledování. · Ceny konkrétních dodavatelů neuvádíme – pro nezávislé srovnání veřejných nabídek viz <a href="https://srovnavac.eru.gov.cz/" target="_blank" rel="noopener">srovnávač ERÚ</a>.</p></div></footer>
 <script src="/app.js" defer></script></body></html>`;
 }
-const leadForm = (id = 'poptavka') => `
-<section class="lead" id="${id}"><h2>Chcete pomoct se změnou dodavatele?</h2>
+const leadForm = (id = 'poptavka', o = {}) => `
+<section class="lead" id="${id}"><h2>${o.title || 'Chcete pomoct se změnou dodavatele?'}</h2>
 <p>Nechte nám kontakt. Ozve se vám člověk, projde s vámi současnou smlouvu a připraví srovnání. Nezávazně a zdarma.</p>
-<form class="leadform" novalidate>
+<form class="leadform" novalidate${o.campaign ? ` data-campaign="${o.campaign}"` : ''}${o.thanks ? ` data-thanks="${o.thanks}"` : ''}>
 <div class="grid2"><label>Jméno a příjmení<input name="name" autocomplete="name" required></label>
 <label>Telefon<input name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="např. 777 123 456" required></label></div>
 <label>E-mail<input name="email" type="email" autocomplete="email" required></label>
 <fieldset><legend>Typ odběrného místa</legend>
-<label class="ch"><input type="radio" name="segment" value="domacnost" required> Domácnost</label>
-<label class="ch"><input type="radio" name="segment" value="firma"> Firma / podnikatel</label>
+<label class="ch"><input type="radio" name="segment" value="domacnost" required${o.segment === 'domacnost' ? ' checked' : ''}> Domácnost</label>
+<label class="ch"><input type="radio" name="segment" value="firma"${o.segment === 'firma' ? ' checked' : ''}> Firma / podnikatel</label>
 <label class="ch"><input type="radio" name="segment" value="svj"> SVJ / bytový dům</label></fieldset>
 <fieldset><legend>Energie</legend>
 <label class="ch"><input type="radio" name="komodita" value="elektrina" required> Elektřina</label>
@@ -55,7 +57,7 @@ const leadForm = (id = 'poptavka') => `
 const artCards = articles.map((a) => `<a class="card" href="/pruvodce/${a.slug}"><h3>${esc(a.title)}</h3><p>${esc(a.desc)}</p></a>`).join('');
 write('index.html', layout({ title: `${BRAND} – průvodce změnou dodavatele elektřiny a plynu`, canonical: '/',
   desc: 'Jak přejít k jinému dodavateli elektřiny a plynu: lhůty výpovědi, konec fixace, potřebné dokumenty, kalkulačky úspory. Pro domácnosti, firmy i SVJ.',
-  body: `<section class="hero"><h1>Změna dodavatele elektřiny a plynu bez chyb</h1>
+  body: `${cezCallout()}<section class="hero"><h1>Změna dodavatele elektřiny a plynu bez chyb</h1>
 <p class="lead-p">Srozumitelní průvodci a kalkulačky: kdy můžete smlouvu vypovědět, kolik reálně ušetříte a co si připravit. Pro domácnosti, firmy i SVJ.</p>
 <p><a class="btn" href="/kalkulacky/termin-vypovedi">Spočítat termín výpovědi</a> <a class="btn ghost" href="/kalkulacky/uspora-elektrina">Spočítat úsporu</a></p></section>
 <section><h2>Kalkulačky</h2><div class="cards">${calcs.map(([s, t]) => `<a class="card" href="/kalkulacky/${s}"><h3>${t}</h3></a>`).join('')}</div></section>
@@ -125,7 +127,8 @@ write('ochrana-osobnich-udaju.html', layout({ title: `Ochrana osobních údajů 
 write('dekujeme.html', layout({ title: `Děkujeme | ${BRAND}`, desc: 'Děkujeme za zprávu.', body: `<h1>Děkujeme</h1><p>Vaše údaje máme. Ozveme se vám zpravidla do jednoho pracovního dne.</p><p><a href="/pruvodce/">Zatím si přečtěte naše průvodce</a></p>` }));
 write('404.html', layout({ title: `Stránka nenalezena | ${BRAND}`, desc: '', body: `<h1>Tuhle stránku jsme nenašli</h1><p><a href="/">Zpět na úvod</a></p>` }));
 write('robots.txt', SITE_URL ? `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}/sitemap.xml\n` : 'User-agent: *\nDisallow: /\n');
-const urls = ['/', '/pruvodce/', '/kalkulacky/', ...calcs.map(([s]) => `/kalkulacky/${s}`), ...articles.map((a) => `/pruvodce/${a.slug}`), '/ochrana-osobnich-udaju'];
+const funnelUrls = buildFunnel({ write, layout, leadForm, esc });
+const urls = [...funnelUrls, '/', '/pruvodce/', '/kalkulacky/', ...calcs.map(([s]) => `/kalkulacky/${s}`), ...articles.map((a) => `/pruvodce/${a.slug}`), '/ochrana-osobnich-udaju'];
 write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((u) => `<url><loc>${SITE_URL}${u}</loc></url>`).join('')}</urlset>`);
 write('favicon.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#0b6e4f"/><path d="M13 3 6 13h5l-1 8 7-10h-5z" fill="#ffd23f"/></svg>');
 for (const f of ['style.css', 'app.js']) fs.copyFileSync(path.join(ROOT, 'src', f), path.join(OUT, f));

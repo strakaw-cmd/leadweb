@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PUB = path.join(ROOT, 'public');
-const DATA = path.join(ROOT, 'data');
+const DATA = process.env.DATA_DIR || path.join(ROOT, 'data');
 fs.mkdirSync(DATA, { recursive: true });
 const PORT = Number(process.env.PORT || 8787);
 const CRM_URL = process.env.CRM_URL || 'https://porovnanienergii.cz/api/send-msg';
@@ -50,7 +50,7 @@ function stats() {
   }
   let leads = 0; try { leads = fs.readFileSync(path.join(DATA, 'leads.jsonl'), 'utf8').trim().split('\n').filter(Boolean).length; } catch {}
   const days = Object.entries(byDay).sort().reverse().map(([d, o]) => ({ day: d, views: o.views, visitors: o.visitors.size }));
-  return { totalViews: human.length, botViews: lines.length - human.length, visitorDaysSum: days.reduce((a, d) => a + d.visitors, 0), leads, days,
+  return { funnelZdrazeniCez: funnel(), totalViews: human.length, botViews: lines.length - human.length, visitorDaysSum: days.reduce((a, d) => a + d.visitors, 0), leads, days,
     topPages: Object.entries(byPage).sort((a, b) => b[1] - a[1]).slice(0, 30), topReferrers: Object.entries(byRef).sort((a, b) => b[1] - a[1]).slice(0, 20) };
 }
 const escH = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -59,6 +59,7 @@ function statsHtml(s) {
   return `<!doctype html><meta charset="utf-8"><meta name="robots" content="noindex"><title>Statistiky</title><style>body{font:15px system-ui;margin:2rem;max-width:900px}td,th{padding:.3rem .8rem;border-bottom:1px solid #ddd;text-align:left}</style>
 <h1>Návštěvnost (bez cookies)</h1><p>Zobrazení stránek (lidé): <b>${s.totalViews}</b> · boti/nástroje: ${s.botViews} · leady uložené: <b>${s.leads}</b></p>
 <p>Unikátní návštěvník = denní anonymní hash, proto se počítá po dnech.</p>
+<h2>Funnel Zdražení ČEZ</h2><table><tr><td>Zobrazení landingu</td><td>${s.funnelZdrazeniCez.landingViews} (návštěvníko-dny ${s.funnelZdrazeniCez.landingVisitorDays})</td></tr><tr><td>Start kvízu</td><td>${s.funnelZdrazeniCez.quizStart}</td></tr><tr><td>Dokončený kvíz</td><td>${s.funnelZdrazeniCez.quizDone} ${escH(JSON.stringify(s.funnelZdrazeniCez.quizResults))}</td></tr><tr><td>Začal vyplňovat formulář</td><td>${s.funnelZdrazeniCez.formStart}</td></tr><tr><td>Odeslaný lead (kampaň)</td><td>${s.funnelZdrazeniCez.leads}</td></tr></table>
 <h2>Po dnech</h2><table><tr><th>Den (UTC)</th><th>Návštěvníci</th><th>Zobrazení</th></tr>${rows(s.days, (d) => `<tr><td>${d.day}</td><td>${d.visitors}</td><td>${d.views}</td></tr>`)}</table>
 <h2>Stránky</h2><table>${rows(s.topPages, ([p, n]) => `<tr><td>${escH(p)}</td><td>${n}</td></tr>`)}</table>
 <h2>Odkud přišli</h2><table>${rows(s.topReferrers, ([p, n]) => `<tr><td>${escH(p)}</td><td>${n}</td></tr>`)}</table>`;
@@ -75,10 +76,12 @@ function limited(ip) {
   arr.push(t); rate.set(ip, arr); return arr.length > 5;
 }
 async function forwardToCrm(lead) {
-  const subject = `Lead z webu ${SITE_TAG}: ${SEG[lead.segment]} – ${KOM[lead.komodita]}`;
+  const camp = lead.campaign === 'zdrazeni-cez' ? '[Zdražení ČEZ – neurčitá smlouva] ' : '';
+  const subject = `${camp}Lead z webu ${SITE_TAG}: ${SEG[lead.segment]} – ${KOM[lead.komodita]}`;
   const message = [
     `Jméno: ${lead.name}`, `Telefon: ${lead.phone || '-'}`, `E-mail: ${lead.email || '-'}`,
     `Typ odběrného místa: ${SEG[lead.segment]}`, `Komodita: ${KOM[lead.komodita]}`, `Poznámka: ${lead.note || '-'}`,
+    ...(lead.campaign ? [`Kampaň: ${lead.campaign}`, `Odpovědi z kvízu: ${lead.quiz || '-'}`] : []),
     `Stránka: ${lead.page || '-'}`, `Zdroj: ${SITE_TAG} (obsahový web)`, `Souhlas GDPR: ano (${lead.t})`, `ID na webu: ${lead.id}`,
   ].join('\n');
   const body = new URLSearchParams({ h: '1', name: lead.name, email: lead.email, t: lead.phone, subject, promo: SOURCE, marketing_optin: '0', message });
@@ -109,12 +112,31 @@ async function handleLead(req, res) {
   if (Object.keys(err).length) return send(res, 422, { ok: false, errors: err });
   const utm = {};
   for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid']) if (d.utm && typeof d.utm[k] === 'string') utm[k] = d.utm[k].slice(0, 200);
-  const lead = { id: crypto.randomUUID(), t: now(), name, phone, email, segment, komodita, note: String(d.note || '').slice(0, 1000), page: String(d.page || '').slice(0, 200), utm, consent: { gdpr: true, text: 'v1-2026-11-12' } };
+  const lead = { id: crypto.randomUUID(), t: now(), name, phone, email, segment, komodita, note: String(d.note || '').slice(0, 1000), page: String(d.page || '').slice(0, 200), utm,
+    campaign: d.campaign === 'zdrazeni-cez' ? 'zdrazeni-cez' : '', quiz: String(d.quiz || '').slice(0, 600), consent: { gdpr: true, text: 'v1-2026-11-12' } };
   append('leads.jsonl', lead);
   let crm = { skipped: true };
   if (CRM_ENABLED) { try { crm = await forwardToCrm(lead); } catch (e) { crm = { ok: false, error: String(e) }; } }
   append('crm-log.jsonl', { t: now(), id: lead.id, crm });
+  append('events.jsonl', { t: now(), e: 'lead', c: lead.campaign || '', p: lead.page, v: visitorId(req) });
   send(res, 200, { ok: true });
+}
+
+// ---------- události funnelu (bez osobních údajů) ----------
+const EVENTS = new Set(['quiz_start', 'quiz_done', 'form_start']);
+async function handleEvent(req, res) {
+  let raw = ''; for await (const c of req) { raw += c; if (raw.length > 2000) break; }
+  let d = {}; try { d = JSON.parse(raw); } catch {}
+  if (EVENTS.has(d.e) && !BOT_RE.test(req.headers['user-agent'] || '')) append('events.jsonl', { t: now(), e: d.e, c: String(d.c || '').slice(0, 40), r: String(d.r || '').slice(0, 40), p: String(d.p || '').slice(0, 120), v: visitorId(req) });
+  res.writeHead(204); res.end();
+}
+function funnel() {
+  let ev = []; try { ev = fs.readFileSync(path.join(DATA, 'events.jsonl'), 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l)); } catch {}
+  let pv = []; try { pv = fs.readFileSync(path.join(DATA, 'pageviews.jsonl'), 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l)).filter((l) => !l.bot); } catch {}
+  const land = pv.filter((l) => l.p.startsWith('/zdrazeni-cez') && !l.p.includes('dekujeme'));
+  const cnt = (e) => ev.filter((x) => x.e === e && (e !== 'lead' || x.c === 'zdrazeni-cez')).length;
+  const results = {}; for (const x of ev) if (x.e === 'quiz_done') results[x.r] = (results[x.r] || 0) + 1;
+  return { landingViews: land.length, landingVisitorDays: new Set(land.map((l) => l.t.slice(0, 10) + l.v)).size, quizStart: cnt('quiz_start'), quizDone: cnt('quiz_done'), formStart: cnt('form_start'), leads: cnt('lead'), quizResults: results };
 }
 
 // ---------- statika ----------
@@ -126,6 +148,7 @@ function serveFile(req, res, pathname) {
   let f = path.join(PUB, path.normalize(p).replace(/^(\.\.[/\\])+/, ''));
   if (!f.startsWith(PUB)) return false;
   if (!path.extname(f) && fs.existsSync(f + '.html')) f += '.html';
+  else if (fs.existsSync(f) && fs.statSync(f).isDirectory() && fs.existsSync(path.join(f, 'index.html'))) f = path.join(f, 'index.html');
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) return false;
   const ext = path.extname(f);
   res.writeHead(200, { 'Content-Type': TYPES[ext] || 'application/octet-stream', 'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=3600',
@@ -138,6 +161,7 @@ http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://x');
   try {
     if (req.method === 'POST' && u.pathname === '/api/lead') return await handleLead(req, res);
+    if (req.method === 'POST' && u.pathname === '/api/event') return await handleEvent(req, res);
     if (u.pathname === STATS_PATH) { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(statsHtml(stats())); }
     if (u.pathname === STATS_PATH + '.json') return send(res, 200, stats());
     if (u.pathname === '/healthz') return send(res, 200, { ok: true });

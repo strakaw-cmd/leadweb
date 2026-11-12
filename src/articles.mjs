@@ -1,3 +1,4 @@
+import { CEZ, CEZ_SRC, cezCallout } from './cez.mjs';
 // Průvodci. Fakta k lhůtám podle ERÚ (eru.gov.cz – „Chci změnit dodavatele energií“, „Smlouva s dodavatelem“,
 // „Vzory pro odstoupení, nebo výpověď smlouvy“, „Ceny energií“), ověřeno 12. 11. 2026.
 const SRC = {
@@ -6,14 +7,52 @@ const SRC = {
   vzory: ['ERÚ: Vzory pro odstoupení, nebo výpověď smlouvy', 'https://eru.gov.cz/vzory-pro-odstoupeni-nebo-vypoved-smlouvy'],
   ceny: ['ERÚ: Ceny energií', 'https://eru.gov.cz/ceny-energii'],
   srovnavac: ['Srovnávač nabídek ERÚ', 'https://srovnavac.eru.gov.cz/'],
+  cez0: CEZ_SRC[0], cez1: CEZ_SRC[1], cez2: CEZ_SRC[2], cez3: CEZ_SRC[3], cez4: CEZ_SRC[4], cez5: CEZ_SRC[5], cez6: CEZ_SRC[6],
   varovani: ['ERÚ: Varujeme spotřebitele, na co si dát pozor ve smlouvách', 'https://eru.gov.cz/varujeme-spotrebitele-na-co-si-dat-pozor-ve-smlouvach'],
 };
 export const articles = [
+{
+  slug: 'zdrazeni-cez-2027', title: `Zdražení ČEZ od ${CEZ.effective}: co dělat, když máte smlouvu na dobu neurčitou`,
+  desc: `ČEZ Prodej od ${CEZ.effectiveShort} zvyšuje ceny elektřiny a plynu u smluv na dobu neurčitou. Koho se to týká, o kolik a do kdy můžete bez sankce odejít.`,
+  sources: ['cez0', 'cez1', 'cez2', 'cez3', 'cez4', 'cez5', 'cez6', 'vzory'],
+  body: `
+<p>ČEZ Prodej 30. října 2026 oznámil, že od <strong>${CEZ.effective}</strong> zvýší ceny elektřiny a plynu zákazníkům se smlouvou <strong>na dobu neurčitou</strong> bez fixace – stávajícím i novým. Podle ČTK se to týká ${CEZ.customers} zákazníků. Kdo má platnou fixaci, toho se zdražení během fixace netýká.</p>
+<h2>O kolik se cena mění</h2>
+<p>Mění se obchodní (neregulovaná) cena za MWh. Stálá měsíční platba zůstává v cenících stejná. Srovnání ceníků ČEZ platných od 1. 1. 2026 a od 1. 1. 2027 (ceny s DPH):</p>
+<table><thead><tr><th>Produkt „Elektřina na dobu neurčitou“</th><th>2026</th><th>od 1. 1. 2027</th><th>Rozdíl</th></tr></thead><tbody>
+<tr><td>Domácnosti, sazba D01d / D02d</td><td>3 860 Kč/MWh</td><td>4 190 Kč/MWh</td><td>+330 Kč/MWh</td></tr>
+<tr><td>Domácnosti, D25d–D27d (vysoký / nízký tarif)</td><td>3 960 / 3 700–3 650</td><td>4 300 / 4 030–3 980</td><td>+340 / +330</td></tr>
+<tr><td>Domácnosti, D35d–D57d (vysoký / nízký tarif)</td><td>4 140 / 4 020</td><td>4 480 / 4 350</td><td>+340 / +330</td></tr>
+<tr><td>Podnikatelé, C01d–C03d</td><td>4 100 Kč/MWh</td><td>4 430 Kč/MWh</td><td>+330 Kč/MWh</td></tr>
+<tr><td>Podnikatelé, C25d–C56d (VT / NT)</td><td>4 199,99 / 3 900–4 100</td><td>4 530 / 4 230–4 430</td><td>+330</td></tr>
+</tbody></table>
+<p><strong>Plyn:</strong> podle ČEZ (citováno ČTK a iDNES) vzroste cena plynu bez fixace pro domácnosti o zhruba ${CEZ.plKcMwhVat} Kč/MWh s DPH na 1 740 Kč/MWh. Ceník plynu pro podnikatele jsme neověřili.</p>
+<p>ČEZ uvádí, že na celkové faktuře to v průměru znamená +3,5 % u elektřiny a +6,5 % u plynu. Prakticky: rozdíl ceny za MWh × vaše roční spotřeba v MWh. Domácnost se spotřebou 3 MWh elektřiny zaplatí za samotnou dodávku zhruba o 990 Kč ročně víc. Regulovanou část ceny na rok 2027 stanoví ERÚ zvlášť a platí u všech dodavatelů stejně.</p>
+<h2>Můžete odejít bez sankce – do ${CEZ.deadline}</h2>
+<p>Podle § 11a energetického zákona platí pro <strong>spotřebitele (domácnosti) a podnikající fyzické osoby</strong> (OSVČ na nízkém napětí, u plynu do 630 MWh ročně):</p>
+<ul>
+<li>Dodavatel musí zdražení oznámit nejpozději 30. den před účinností, tedy u změny od ${CEZ.effectiveShort} do <strong>${CEZ.notifyBy}</strong>, a to způsobem podle smlouvy a s poučením o právu odejít. Bez řádného oznámení zdražení nemá právní účinky.</li>
+<li>Pokud se zdražením nesouhlasíte, můžete smlouvu <strong>bez postihu vypovědět kdykoli do 10. dne před účinností</strong> – u změny od ${CEZ.effectiveShort} je to <strong>${CEZ.deadline}</strong>. Lhůta je zachována, pokud výpověď v této době <strong>odešlete</strong>. Smlouva pak skončí ${CEZ.endOld}.</li>
+<li>Kdo nic neudělá, od ${CEZ.effectiveShort} platí nové ceny. Smlouvu na dobu neurčitou lze i potom vypovědět standardně s tříměsíční výpovědní dobou.</li>
+</ul>
+<p>Výpověď posílejte tak, abyste mohli doložit datum odeslání (zákaznický účet, datová schránka, doporučený dopis). ERÚ zveřejňuje <a href="https://eru.gov.cz/vzory-pro-odstoupeni-nebo-vypoved-smlouvy" target="_blank" rel="noopener">vzory výpovědí</a>.</p>
+<h2>Firmy, SVJ a další právnické osoby</h2>
+<p>Zákonné právo odejít bez postihu podle § 11a se vztahuje na spotřebitele a podnikající fyzické osoby. U s.r.o., a.s., SVJ či družstva rozhodují obchodní podmínky a smlouva s ČEZ – zkontrolujte, co uvádí oznámení o změně ceny a obchodní podmínky. Smlouvu na dobu neurčitou lze vypovědět s výpovědní dobou podle smlouvy (zákon uvádí tři měsíce).</p>
+<h2>Jak postupovat</h2>
+<ol>
+<li>Ověřte na vyúčtování nebo v zákaznickém účtu ČEZ, že máte produkt na dobu neurčitou.</li>
+<li>Porovnejte nabídky podle ceny za MWh, stálého platu, délky závazku a pokut (<a href="/kalkulacky/uspora-elektrina">kalkulačka úspory</a>, <a href="https://srovnavac.eru.gov.cz/" target="_blank" rel="noopener">srovnávač ERÚ</a>).</li>
+<li>Podepište novou smlouvu s předstihem – nový dodavatel obvykle podá výpověď za vás a změnu zaregistruje tak, aby dodávka navázala od ${CEZ.effectiveShort}.</li>
+<li>Nepodepisujte zároveň protinabídku stávajícího dodavatele, dokud nevíte, kterou smlouvu ukončíte.</li>
+</ol>
+<p><a class="btn" href="/zdrazeni-cez">Ověřit, jestli se vás zdražení týká</a></p>`,
+},
 {
   slug: 'jak-zmenit-dodavatele-energii', title: 'Jak změnit dodavatele elektřiny a plynu krok za krokem',
   desc: 'Praktický postup změny dodavatele energií: co zjistit ve smlouvě, jak vybrat nabídku, kdo podává výpověď a na co si dát pozor.',
   sources: ['zmena', 'smlouva', 'srovnavac'],
   body: `
+${cezCallout('')}
 <p>Změna dodavatele elektřiny nebo plynu není složitá, ale má pevné pořadí kroků. Kdo je přeskočí, riskuje smluvní pokutu nebo dvě platné smlouvy najednou. Tady je postup, který funguje pro domácnosti i menší firmy.</p>
 <h2>1. Zjistěte, jakou smlouvu máte</h2>
 <p>Nejdůležitější je, jestli máte smlouvu <strong>na dobu neurčitou</strong>, nebo <strong>na dobu určitou</strong> (často s fixací ceny).</p>
@@ -38,6 +77,7 @@ export const articles = [
   desc: 'Tři měsíce u doby neurčité, 20 dní před prolongací, 14 nebo 30 dní na odstoupení, 15 dní při stěhování. Přehled lhůt podle ERÚ.',
   sources: ['vzory', 'smlouva', 'zmena'],
   body: `
+${cezCallout('')}
 <p>Lhůty pro ukončení smlouvy na elektřinu nebo plyn se liší podle typu smlouvy a podle toho, kde a jak jste ji uzavřeli. Následující přehled vychází z informací Energetického regulačního úřadu (ERÚ) pro spotřebitele.</p>
 <table><thead><tr><th>Situace</th><th>Lhůta</th></tr></thead><tbody>
 <tr><td>Smlouva na dobu neurčitou</td><td>Výpověď kdykoli, bez sankce. Standardně tříměsíční výpovědní doba od 1. dne měsíce po doručení (ve smlouvě může být kratší).</td></tr>
@@ -137,6 +177,7 @@ export const articles = [
   desc: 'Maloodběr podnikatelů, sazby C, smlouvy na míru, smluvní pokuty a omezená spotřebitelská ochrana. Co si ohlídat při změně dodavatele pro firmu.',
   sources: ['srovnavac', 'ceny'],
   body: `
+${cezCallout('firmy')}
 <p>Firmy a podnikatelé (včetně živnostníků s odběrným místem na IČO) odebírají energie za jiných podmínek než domácnosti. Princip změny dodavatele je stejný, rozdíly jsou ve smlouvách a cenách.</p>
 <h2>Hlavní rozdíly</h2>
 <ul>
