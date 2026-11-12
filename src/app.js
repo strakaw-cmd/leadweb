@@ -1,10 +1,12 @@
 (() => {
+  const B = document.documentElement.dataset.base || '', STATIC = document.documentElement.dataset.static === '1';
   const fmt = (n) => Math.round(n).toLocaleString('cs-CZ') + ' Kč';
   const val = (f, n) => { const v = (f.elements[n]?.value || '').replace(/\s/g, '').replace(',', '.'); return v === '' ? null : Number(v); };
   const utm = {}; const sp = new URLSearchParams(location.search);
   for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid']) { const v = sp.get(k) || sessionStorage.getItem('u_' + k); if (v) { utm[k] = v; sessionStorage.setItem('u_' + k, v); } }
 
-  const ev = (e, extra = {}) => { try { navigator.sendBeacon ? navigator.sendBeacon('/api/event', new Blob([JSON.stringify({ e, p: location.pathname, ...extra })], { type: 'application/json' })) : fetch('/api/event', { method: 'POST', body: JSON.stringify({ e, p: location.pathname, ...extra }), keepalive: true }); } catch {} };
+  // Události funnelu jen tam, kde běží vlastní backend (server.js / Cloudflare). Na statickém hostingu (GitHub Pages) se tiše nic neposílá.
+  const ev = STATIC ? () => {} : (e, extra = {}) => { try { const b = JSON.stringify({ e, p: location.pathname, ...extra }); navigator.sendBeacon ? navigator.sendBeacon(B + '/api/event', new Blob([b], { type: 'application/json' })) : fetch(B + '/api/event', { method: 'POST', body: b, keepalive: true }).catch(() => {}); } catch {} };
   let quizText = '';
 
   // ---- kvíz Zdražení ČEZ (fakta: src/cez.mjs, předávají se přes data-*) ----
@@ -24,7 +26,7 @@
         : '<p><strong>Výpověď bez sankce stačí odeslat do 22. prosince 2026.</strong> Smlouva pak skončí 31. prosince 2026 a nový dodavatel může navázat od 1. ledna 2027.</p>';
       if (cez && q2 === 'neurcita') { r = 'tyka'; html = '<h3>Zdražení se vás týká</h3><p>Od 1. ledna 2027 platí u vaší smlouvy nové ceny ČEZ.</p>' + right; }
       else if ((cez && q2 === 'nevim') || (q1 === 'nevim' && q2 !== 'fixace')) { r = 'asi'; html = '<h3>Pravděpodobně se vás týká</h3><p>Ověřte na vyúčtování nebo v zákaznickém účtu, kdo je váš dodavatel a zda máte produkt „na dobu neurčitou“. Pokud ano:</p>' + right; }
-      else if (cez && q2 === 'fixace') { r = 'fixace'; html = '<h3>Během fixace se vás zdražení netýká</h3><p>Pevnou cenu dodavatel během fixace měnit nemůže. Pohlídejte si konec fixace – při automatickém prodloužení musí výpověď dorazit nejpozději 20. den před koncem. <a href="/kalkulacky/termin-vypovedi">Spočítat termín</a>.</p>'; }
+      else if (cez && q2 === 'fixace') { r = 'fixace'; html = '<h3>Během fixace se vás zdražení netýká</h3><p>Pevnou cenu dodavatel během fixace měnit nemůže. Pohlídejte si konec fixace – při automatickém prodloužení musí výpověď dorazit nejpozději 20. den před koncem. <a href="' + B + '/kalkulacky/termin-vypovedi">Spočítat termín</a>.</p>'; }
       else { r = 'netyka'; html = '<h3>Tohle zdražení se vás netýká</h3><p>Týká se jen zákazníků ČEZ Prodej se smlouvou na dobu neurčitou. I jiní dodavatelé ale mohou ceny měnit – zdražení vám musí oznámit nejméně 30 dní předem.</p>'; }
       if (r === 'tyka' || r === 'asi') {
         const rows = [];
@@ -49,6 +51,23 @@
     });
   });
 
+  // ---- přímé odeslání do CRM (statický hosting): stejný formát jako functions/api/lead.js ----
+  const SEG = { domacnost: 'Domácnost', firma: 'Firma / podnikatel', svj: 'SVJ / bytový dům' };
+  const KOM = { elektrina: 'Elektřina', plyn: 'Plyn', oboje: 'Elektřina i plyn' };
+  async function sendCrm(d) {
+    const tag = 'zmenitdodavatele-web', t = new Date().toISOString();
+    const id = (crypto.randomUUID && crypto.randomUUID()) || Date.now().toString(36) + Math.random().toString(36).slice(2);
+    const phone = d.phone.replace(/[\s-]+/g, '').replace(/^(?:\+|00)420(?=\d{9}$)/, '');
+    const note = d.note.slice(0, 1000), camp = d.campaign === 'zdrazeni-cez';
+    const message = [`Jméno: ${d.name}`, `Telefon: ${phone}`, `E-mail: ${d.email}`, `Typ odběrného místa: ${SEG[d.segment]}`, `Komodita: ${KOM[d.komodita]}`, `Poznámka: ${note || '-'}`,
+      ...(camp ? ['Kampaň: zdrazeni-cez', `Odpovědi z kvízu: ${String(d.quiz || '-').slice(0, 600)}`] : []), `Stránka: ${d.page || '-'}`, `Zdroj: ${tag} (obsahový web)`, `Souhlas GDPR: ano (${t})`, `ID na webu: ${id}`].join('\n');
+    const body = new URLSearchParams({ h: '1', name: d.name.slice(0, 120), email: d.email.slice(0, 160), t: phone, subject: `${camp ? '[Zdražení ČEZ – neurčitá smlouva] ' : ''}Lead z webu ${tag}: ${SEG[d.segment]} – ${KOM[d.komodita]}`, promo: 'porovnanienergii.cz', marketing_optin: '0', message });
+    for (const [k, v] of Object.entries(d.utm || {})) body.append(k, String(v).slice(0, 200));
+    const r = await fetch('https://porovnanienergii.cz/api/send-msg', { method: 'POST', body, headers: { Accept: 'application/json' } });
+    const j = await r.json().catch(() => null);
+    return r.ok && Array.isArray(j) && j.length === 3;
+  }
+
   // ---- lead form ----
   document.querySelectorAll('form.leadform').forEach((f) => {
     const t0 = Date.now(); const st = f.querySelector('.status'); const btn = f.querySelector('button');
@@ -71,9 +90,16 @@
       showErr(errs); if (Object.keys(errs).length) return;
       btn.disabled = true; st.textContent = 'Odesílám…';
       try {
-        const r = await fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
+        const thanks = f.dataset.thanks || B + '/dekujeme';
+        if (STATIC) {
+          // honeypot a minimální čas vyplnění: robotům tváříme úspěch, nic neodesíláme
+          if (d.website || Date.now() - t0 < 2500) { location.href = thanks; return; }
+          if (await sendCrm(d)) { location.href = thanks; return; }
+          throw new Error('crm');
+        }
+        const r = await fetch(B + '/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
         const j = await r.json().catch(() => ({}));
-        if (r.ok && j.ok) { location.href = f.dataset.thanks || '/dekujeme'; return; }
+        if (r.ok && j.ok) { location.href = thanks; return; }
         if (j.errors) showErr(j.errors);
         st.textContent = j.error || 'Odeslání se nepovedlo, zkuste to prosím znovu.';
       } catch { st.textContent = 'Odeslání se nepovedlo, zkontrolujte připojení a zkuste to znovu.'; }

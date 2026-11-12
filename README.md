@@ -23,3 +23,11 @@
   - Sklik: `/zdrazeni-cez?utm_source=seznam&utm_medium=cpc&utm_campaign=zdrazeni-cez`
   - Facebook/Meta: `/zdrazeni-cez?utm_source=facebook&utm_medium=paid_social&utm_campaign=zdrazeni-cez`
 - Kontrola odkazů: `node scripts-linkcheck.mjs` (proti běžícímu serveru).
+
+## GitHub Pages (statický hosting)
+- Živě: https://strakaw-cmd.github.io/leadweb/ – nasazuje `.github/workflows/pages.yml` při každém pushi do `main`.
+- Build: `SITE_URL=https://strakaw-cmd.github.io/leadweb BASE_PATH=/leadweb STATIC=1 node src/build.mjs`.
+  `BASE_PATH` přidá podcestu ke všem interním odkazům, `STATIC=1` přepne formulář na přímé odeslání z prohlížeče
+  na `https://porovnanienergii.cz/api/send-msg` (stejný formát jako `functions/api/lead.js`, CORS povoleno), honeypot a minimální čas
+  vyplnění se kontrolují v prohlížeči. Události funnelu (`/api/event`) se na statickém hostingu neposílají a lead se neukládá jinam než do CRM.
+- Složka `data/` (leady, návštěvnost, logy) se do gitu nikdy nedává.

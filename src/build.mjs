@@ -10,10 +10,14 @@ const OUT = path.join(ROOT, 'public');
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
 const BRAND = 'Změnit dodavatele';
-const SITE_URL = process.env.SITE_URL || '';
+const SITE_URL = (process.env.SITE_URL || '').replace(/\/$/, '');
+// Statický hosting (GitHub Pages): BASE_PATH = podcesta webu (např. /leadweb), STATIC=1 = formulář posílá rovnou do CRM, bez vlastního serveru.
+const BASE = (process.env.BASE_PATH || '').replace(/\/$/, '');
+const STATIC = process.env.STATIC === '1';
 const OPERATOR = 'Václav Straka, IČO 86776606, Emilie Floriánové 724/21, 466 01 Jablonec nad Nisou';
 const CONTACT_EMAIL = 'info@porovnanienergii.cz';
-const write = (rel, s) => { const f = path.join(OUT, rel); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, s); };
+const withBase = (h) => h.replace(/(href|src|data-thanks)="\/(?!\/)/g, `$1="${BASE}/`).replace('<html lang="cs">', `<html lang="cs" data-base="${BASE}"${STATIC ? ' data-static="1"' : ''}>`);
+const write = (rel, s) => { const f = path.join(OUT, rel); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, rel.endsWith('.html') ? withBase(s) : s); };
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const calcs = [
@@ -120,10 +124,10 @@ write('ochrana-osobnich-udaju.html', layout({ title: `Ochrana osobních údajů 
   body: `<article class="art"><h1>Ochrana osobních údajů</h1>
 <p><strong>Správce:</strong> ${OPERATOR}. Kontakt pro dotazy a uplatnění práv: <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.</p>
 <h2>Jaké údaje a proč</h2><p>Z formuláře zpracováváme jméno, telefon, e-mail, typ odběrného místa, druh energie a případnou poznámku. Účelem je kontaktovat vás a připravit nabídku nebo srovnání dodávky energií. Právním základem je váš souhlas (čl. 6 odst. 1 písm. a GDPR) a jednání o smlouvě na vaši žádost (čl. 6 odst. 1 písm. b GDPR).</p>
-<h2>Kde údaje ukládáme</h2><p>Údaje se uloží na serveru tohoto webu a předají se do zákaznického systému (CRM) porovnanienergii.cz, ve kterém s nimi pracují osoby pověřené správcem. Údaje nepředáváme k reklamním účelům třetím stranám.</p>
+<h2>Kde údaje ukládáme</h2><p>${STATIC ? 'Údaje se z formuláře odešlou přímo' : 'Údaje se uloží na serveru tohoto webu a předají se'} do zákaznického systému (CRM) porovnanienergii.cz, ve kterém s nimi pracují osoby pověřené správcem. Údaje nepředáváme k reklamním účelům třetím stranám.</p>
 <h2>Jak dlouho</h2><p>Po dobu nezbytnou k vyřízení poptávky, nejdéle 2 roky od posledního kontaktu, pokud nevznikne smluvní vztah.</p>
 <h2>Vaše práva</h2><p>Máte právo souhlas kdykoli odvolat, požadovat přístup k údajům, jejich opravu, výmaz, omezení zpracování a přenositelnost a podat stížnost u Úřadu pro ochranu osobních údajů (uoou.gov.cz).</p>
-<h2>Cookies a měření návštěvnosti</h2><p>Web nepoužívá cookies. Návštěvnost měříme anonymně na vlastním serveru: ukládáme navštívenou stránku, odkazující doménu a denně se měnící anonymní identifikátor, ze kterého nelze zpětně zjistit IP adresu ani vás identifikovat.</p></article>` }));
+<h2>Cookies a měření návštěvnosti</h2><p>Web nepoužívá cookies${STATIC ? ' ani nástroje pro měření návštěvnosti.' : '. Návštěvnost měříme anonymně na vlastním serveru: ukládáme navštívenou stránku, odkazující doménu a denně se měnící anonymní identifikátor, ze kterého nelze zpětně zjistit IP adresu ani vás identifikovat.'}</p></article>` }));
 write('dekujeme.html', layout({ title: `Děkujeme | ${BRAND}`, desc: 'Děkujeme za zprávu.', body: `<h1>Děkujeme</h1><p>Vaše údaje máme. Ozveme se vám zpravidla do jednoho pracovního dne.</p><p><a href="/pruvodce/">Zatím si přečtěte naše průvodce</a></p>` }));
 write('404.html', layout({ title: `Stránka nenalezena | ${BRAND}`, desc: '', body: `<h1>Tuhle stránku jsme nenašli</h1><p><a href="/">Zpět na úvod</a></p>` }));
 write('robots.txt', SITE_URL ? `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}/sitemap.xml\n` : 'User-agent: *\nDisallow: /\n');
@@ -132,4 +136,5 @@ const urls = [...funnelUrls, '/', '/pruvodce/', '/kalkulacky/', ...calcs.map(([s
 write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((u) => `<url><loc>${SITE_URL}${u}</loc></url>`).join('')}</urlset>`);
 write('favicon.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#0b6e4f"/><path d="M13 3 6 13h5l-1 8 7-10h-5z" fill="#ffd23f"/></svg>');
 for (const f of ['style.css', 'app.js']) fs.copyFileSync(path.join(ROOT, 'src', f), path.join(OUT, f));
-console.log('built', urls.length, 'pages');
+if (STATIC) write('.nojekyll', '');
+console.log('built', urls.length, 'pages', BASE ? `base ${BASE}` : '', STATIC ? 'static' : '');
