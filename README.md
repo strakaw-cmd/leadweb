@@ -31,3 +31,8 @@
   na `https://porovnanienergii.cz/api/send-msg` (stejný formát jako `functions/api/lead.js`, CORS povoleno), honeypot a minimální čas
   vyplnění se kontrolují v prohlížeči. Události funnelu (`/api/event`) se na statickém hostingu neposílají a lead se neukládá jinam než do CRM.
 - Složka `data/` (leady, návštěvnost, logy) se do gitu nikdy nedává.
+
+## Měření, vlastní doména, kampaň
+- Celý plán kampaně (doména, měření, CRO, Google Ads/Sklik/Meta, bannery, SEO): `KAMPAN-CEZ.md`. Texty reklam + kontrola délek: `python3 kampan/ads.py --md`. Bannery: `kampan/bannery/`.
+- Měření je vypnuté, dokud nejsou vyplněné proměnné repozitáře `GA4_ID`, `GADS_ID`, `GADS_LEAD_LABEL`, `GADS_CALL_LABEL`, `SKLIK_CONV_ID`, `SKLIK_RTG_ID`, `META_PIXEL_ID` (bez nich žádný skript ani cookie lišta). S nimi: Consent Mode v2 (výchozí odmítnuto), cookie lišta, nástroje se načtou až po souhlasu, konverze `lead` na děkovné stránce po potvrzení CRM.
+- Vlastní doména: proměnná `CUSTOM_DOMAIN` (např. `www.zmenitdodavatele.cz`) → build bez `/leadweb`, s `CNAME`; v Settings → Pages nastavit stejnou doménu.

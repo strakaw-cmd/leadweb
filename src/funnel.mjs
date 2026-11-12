@@ -51,7 +51,7 @@ const factsBox = (seg) => `
 export function buildFunnel({ write, layout, leadForm, esc }) {
   const src = `<aside class="src"><h2>Zdroje</h2><ul>${CEZ_SRC.map(([t, u]) => `<li><a href="${u}" target="_blank" rel="noopener">${esc(t)}</a></li>`).join('')}</ul>
 <p class="muted">Ověřeno 12. 11. 2026. Informativní text, nenahrazuje právní poradenství; rozhoduje znění vaší smlouvy a oznámení dodavatele. Tento web není stránkou společnosti ČEZ.</p></aside>`;
-  const faqHtml = (seg) => `<section class="faq"><h2>Časté otázky</h2>${faq(seg).map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</section>`;
+  const faqHtml = (seg) => `<section class="faq" id="otazky"><h2>Časté otázky</h2>${faq(seg).map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</section>`;
   const page = (seg, h1, lead) => `<section class="hero"><p class="crumbs"><a href="/zdrazeni-cez">Zdražení ČEZ</a></p><h1>${h1}</h1><p class="lead-p">${lead}</p>
 ${factsBox(seg)}${deadlineLine}<p><a class="btn" href="#kviz">Ověřit, jestli se mě to týká</a> <a class="btn ghost" href="#poptavka">Chci srovnání nabídek</a></p></section>
 ${trust}${quiz(seg)}${leadForm('poptavka', { campaign: 'zdrazeni-cez', segment: seg === 'firmy' ? 'firma' : 'domacnost', title: 'Chcete porovnat nabídky a případně odejít?', thanks: '/zdrazeni-cez/dekujeme' })}
