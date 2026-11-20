@@ -24,7 +24,7 @@ export async function onRequestPost({ request, env }) {
   if (env.LEADS) await env.LEADS.put(`lead:${t}:${id}`, JSON.stringify(lead));
   const message = [`Jméno: ${name}`, `Telefon: ${phone}`, `E-mail: ${email}`, `Typ odběrného místa: ${SEG[d.segment]}`, `Komodita: ${KOM[d.komodita]}`,
     `Poznámka: ${lead.note || '-'}`, ...(lead.campaign ? [`Kampaň: ${lead.campaign}`, `Odpovědi z kvízu: ${lead.quiz || '-'}`] : []), `Stránka: ${lead.page || '-'}`, `Zdroj: ${tag} (obsahový web)`, `Souhlas GDPR: ano (${t})`, `ID na webu: ${id}`].join('\n');
-  const body = new URLSearchParams({ h: '1', name, email, t: phone, subject: `${camp}Lead z webu ${tag}: ${SEG[d.segment]} – ${KOM[d.komodita]}`, promo: env.LEAD_SOURCE || 'porovnanienergii.cz', marketing_optin: '0', message });
+  const body = new URLSearchParams({ h: '1', name, email, t: phone, subject: `${camp}Lead z webu ${tag}: ${SEG[d.segment]} – ${KOM[d.komodita]}`, promo: env.LEAD_SOURCE || 'zmenitdodavatele', marketing_optin: '0', message });
   for (const [k, v] of Object.entries(lead.utm)) if (typeof v === 'string') body.append(k, v.slice(0, 200));
   let ok = false;
   try { const r = await fetch('https://porovnanienergii.cz/api/send-msg', { method: 'POST', body, headers: { Accept: 'application/json' } }); const j = await r.json().catch(() => null); ok = r.ok && Array.isArray(j) && j.length === 3; } catch {}

@@ -38,7 +38,7 @@ ${seg === 'firmy' ? `<fieldset><legend>Kdo je odběratel?</legend>
 
 const PHONE = '<a href="tel:+420737225960">737 225 960</a>';
 // Odpočet: velké číslo dní doplní app.js (bez JS zůstane jen věta s datem).
-export const deadlineBox = () => `<div class="cd" data-deadline="${CEZ.deadlineISO}"><div class="cd-num" aria-hidden="true" hidden><span class="cd-k">zbývá</span><b class="cd-n"></b><span class="cd-u"></span></div><p class="deadline">${ic('clock')}<span>Výpověď bez sankce stačí odeslat do <strong>${CEZ.deadline}</strong><span class="dleft"></span>.</span></p></div>`;
+export const deadlineBox = () => `<div class="cd" data-deadline="${CEZ.deadlineISO}"><div class="cd-num" aria-hidden="true" hidden><span class="cd-k">zbývá</span><b class="cd-n"></b><span class="cd-u"></span></div><p class="deadline">${ic('clock')}<span>Výpověď bez sankce stačí odeslat do <strong>${CEZ.deadline}</strong><span class="dleft"></span>. Chcete-li od 1. 1. nového dodavatele, ozvěte se do <strong>${CEZ.contactBy}</strong>.</span></p></div>`;
 const deadlineLine = deadlineBox();
 const trust = `<section class="trust" aria-label="Kdo jsme"><ul>
 <li>${ic('shield')}<span><strong>Registrovaný zprostředkovatel ERÚ</strong> č. 742238366</span></li><li>${ic('award')}<span><strong>V energetice od roku 2009</strong></span></li><li>${ic('users')}<span><strong>20+ dodavatelů</strong> v porovnání</span></li><li>${ic('wallet')}<span><strong>0 Kč</strong> za naši službu</span></li></ul>
@@ -55,7 +55,7 @@ export function buildFunnel({ write, layout, leadForm, esc }) {
   const src = `<aside class="src"><h2>Zdroje</h2><ul>${CEZ_SRC.map(([t, u]) => `<li><a href="${u}" target="_blank" rel="noopener">${esc(t)}</a></li>`).join('')}</ul>
 <p class="muted">Ověřeno 12. 11. 2026. Informativní text, nenahrazuje právní poradenství; rozhoduje znění vaší smlouvy a oznámení dodavatele. Tento web není stránkou společnosti ČEZ.</p></aside>`;
   const faqHtml = (seg) => `<section class="faq" id="otazky"><h2>Časté otázky</h2>${faq(seg).map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</section>`;
-  const page = (seg, h1, lead) => `<section class="hero band"><div class="hero-grid"><div class="hero-intro"><p class="crumbs"><a href="/zdrazeni-cez">Zdražení ČEZ</a></p><h1>${h1}</h1><p class="lead-p">${lead}</p>
+  const page = (seg, h1, lead) => `<section class="hero band"><div class="hero-grid"><div class="hero-intro"><p class="crumbs"><a href="/zdrazeni-cez/">Zdražení ČEZ</a></p><h1>${h1}</h1><p class="lead-p">${lead}</p>
 ${deadlineLine}<p class="cta-row"><a class="btn btn-lg" href="#kviz">Ověřit, jestli se mě to týká ${ic('arrow')}</a> <a class="btn ghost btn-lg" href="#poptavka">Chci srovnání nabídek</a></p></div>
 ${leadForm('poptavka', { hero: true, campaign: 'zdrazeni-cez', segment: seg === 'firmy' ? 'firma' : 'domacnost', title: 'Chcete porovnat nabídky a případně odejít?', thanks: '/zdrazeni-cez/dekujeme' })}
 <div class="hero-facts">${factsBox(seg)}</div></div></section>
@@ -63,7 +63,7 @@ ${trust}${quiz(seg)}
 ${faqHtml(seg)}<p class="more"><a href="/pruvodce/zdrazeni-cez-2027">${ic('book')} Podrobný průvodce zdražením ČEZ</a></p>${src}${mbar}`;
   const ldFaq = (seg) => `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq(seg).map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) })}</script>`;
 
-  write('zdrazeni-cez/index.html', layout({ title: `Zdražení ČEZ od ${CEZ.effectiveShort} u smluv na dobu neurčitou – co dělat`, canonical: '/zdrazeni-cez', funnel: true,
+  write('zdrazeni-cez/index.html', layout({ title: `Zdražení ČEZ od ${CEZ.effectiveShort} u smluv na dobu neurčitou – co dělat`, canonical: '/zdrazeni-cez/', funnel: true,
     desc: `ČEZ Prodej od ${CEZ.effective} zdražuje elektřinu a plyn u smluv na dobu neurčitou. Ověřte, jestli se vás to týká, a do ${CEZ.deadline} můžete bez sankce odejít.`,
     body: `<section class="hero band"><div class="hero-grid"><div class="hero-intro"><p class="eyebrow warn">${ic('alert')} Zdražení ČEZ od ${CEZ.effectiveShort}</p><h1>ČEZ od ${CEZ.effective} zdražuje smlouvy bez fixace. Ověřte, jestli můžete odejít bez sankce</h1>
 <p class="lead-p">Týká se domácností i podnikatelů se smlouvou na dobu neurčitou. Pokud se zdražením nesouhlasíte, domácnosti a podnikající fyzické osoby mohou smlouvu bez sankce vypovědět.</p>
@@ -79,7 +79,7 @@ ${trust}${quiz('')}${faqHtml('')}${src}${ldFaq('')}${mbar}` }));
   write('zdrazeni-cez/firmy.html', layout({ title: `Zdražení ČEZ pro podnikatele a firmy od ${CEZ.effectiveShort}`, canonical: '/zdrazeni-cez/firmy', funnel: true,
     desc: `ČEZ Prodej zvyšuje od ${CEZ.effective} ceny elektřiny pro podnikatele na dobu neurčitou o 330 Kč/MWh s DPH. Co mohou OSVČ a firmy udělat.`,
     body: page('firmy', `Zdražení ČEZ od ${CEZ.effective}: podnikatelé, firmy a SVJ`, `Ceník ČEZ „Elektřina na dobu neurčitou“ pro podnikatele se od ${CEZ.effective} zvyšuje o 330 Kč/MWh s DPH (272,73 Kč bez DPH). Podnikající fyzické osoby mohou bez sankce odejít; u právnických osob rozhoduje smlouva.`) + ldFaq('firmy') }));
-  write('zdrazeni-cez/dekujeme.html', layout({ title: 'Děkujeme – zdražení ČEZ', canonical: '/zdrazeni-cez/dekujeme', funnel: true, desc: 'Děkujeme, ozveme se vám.',
+  write('zdrazeni-cez/dekujeme.html', layout({ title: 'Děkujeme – zdražení ČEZ', canonical: '/zdrazeni-cez/dekujeme', funnel: true, noindex: true, desc: 'Děkujeme, ozveme se vám.',
     body: `<section class="hero thanks" data-thanks-page><span class="okmark">${ic('check')}</span><h1>Děkujeme, máme to</h1><p class="lead-p">Ozveme se vám zpravidla do jednoho pracovního dne a projdeme s vámi současnou smlouvu a nabídky. Nic nepodepisujete předem.</p><p class="callme">${ic('phone')}<span>Spěchá to? Zavolejte na infolinku ${PHONE} (Po–Pá 8–17).</span></p></section>
 <section class="art"><h2>Co bude dál</h2><ol class="steps"><li>Zavolá vám člověk z týmu PorovnáníEnergií.cz a ověří, jakou smlouvu u ČEZ máte.</li><li>Připravíme srovnání nabídek pro vaši spotřebu. Rozhodnutí je jen na vás.</li><li>Pokud budete chtít změnit dodavatele, vyřídíme za vás výpověď i novou smlouvu tak, aby dodávka plynule navázala.</li></ol>
 <h2>Co si připravit</h2><ul>
@@ -89,5 +89,5 @@ ${trust}${quiz('')}${faqHtml('')}${src}${ldFaq('')}${mbar}` }));
 <li>číslo zákaznického účtu ČEZ nebo přístup do zákaznického portálu.</li></ul>
 <h2>Důležité datum</h2><p>Výpověď bez sankce kvůli zdražení je potřeba <strong>odeslat do ${CEZ.deadline}</strong> (domácnosti a podnikající fyzické osoby). Pokud změnu vyřídí nový dodavatel, podá výpověď za vás na základě plné moci.</p>
 <p><a href="/pruvodce/dokumenty-ke-zmene-dodavatele">Podrobně: jaké dokumenty potřebujete</a> · <a href="/pruvodce/zdrazeni-cez-2027">Průvodce zdražením ČEZ</a></p></section>` }));
-  return ['/zdrazeni-cez', '/zdrazeni-cez/domacnost', '/zdrazeni-cez/firmy'];
+  return ['/zdrazeni-cez/', '/zdrazeni-cez/domacnost', '/zdrazeni-cez/firmy'];
 }

@@ -45,7 +45,7 @@ export const articles = [
 <li>Podepište novou smlouvu s předstihem – nový dodavatel obvykle podá výpověď za vás a změnu zaregistruje tak, aby dodávka navázala od ${CEZ.effectiveShort}.</li>
 <li>Nepodepisujte zároveň protinabídku stávajícího dodavatele, dokud nevíte, kterou smlouvu ukončíte.</li>
 </ol>
-<p><a class="btn" href="/zdrazeni-cez">Ověřit, jestli se vás zdražení týká</a></p>`,
+<p><a class="btn" href="/zdrazeni-cez/">Ověřit, jestli se vás zdražení týká</a></p>`,
 },
 {
   slug: 'jak-zmenit-dodavatele-energii', title: 'Jak změnit dodavatele elektřiny a plynu krok za krokem',

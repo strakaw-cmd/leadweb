@@ -40,3 +40,19 @@
 ## Vzhled
 
 Design 2026: `src/style.css` (bez frameworku, mobile-first), ikony inline SVG ve stylu Lucide (`src/icons.mjs`), písmo Inter (SIL OFL) v podmnožině pro češtinu v `src/fonts/` (~41 kB, kopíruje se do `public/fonts/`). Odpočet dní do lhůty doplňuje `app.js` do `.cd-num` z `data-deadline`.
+
+## Počítání leadů (od 20. 11. 2026)
+
+`/api/send-msg` v CRM **lead nezakládá**, jen pošle e-mail „Zprava z kalkulatoru“ obchodu. Každý lead z tohoto webu v něm má:
+- `akce: zmenitdodavatele` (pole `promo`, stejně jako nejsemosel.cz posílá `nejsemosel`), předmět `Lead z webu zmenitdodavatele-web: …`,
+- ve zprávě `Vstupní stránka`, `Přišel z` (odkazující doména nebo `direct`) a `Zdroj: zmenitdodavatele-web (zmenitdodavatele.cz)`,
+- v řádku `tracking:` UTM z URL (`utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`, `gclid`, `fbclid`) a navíc `utm_site=zmenitdodavatele.cz`, `utm_landing`, `utm_ref`.
+
+Počet leadů = počet e-mailů s `akce: zmenitdodavatele` (filtr ve schránce obchodu), na serveru CRM také řádky `SENT promo=zmenitdodavatele` v `/var/www/tmp/sendMsg-YYYY-MM-DD.log`.
+
+## SEO
+
+Každá stránka má title, description, canonical, Open Graph (`/og.png` 1200×630) a Twitter card. Úvod má JSON-LD `Organization` a `WebSite`, průvodci `Article` a `BreadcrumbList`, stránky Zdražení ČEZ `FAQPage`. `sitemap.xml` obsahuje `lastmod` a děkovné stránky a 404 mají `noindex`.
+Ověření Search Console a Seznam Webmaster: proměnné repa `GSC_VERIFICATION` a `SEZNAM_VERIFICATION` (jen hodnota `content` z meta tagu), pak znovu spustit workflow.
+
+Další plány: `kampan/ROZPOCET-REKLAMA.md` (rozpočet na reklamu, návrh) a `kampan/ODKAZY-PE-NEJSEMOSEL.md` (odkazy z vlastních webů, návrh).

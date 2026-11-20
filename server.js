@@ -13,7 +13,7 @@ fs.mkdirSync(DATA, { recursive: true });
 const PORT = Number(process.env.PORT || 8787);
 const CRM_URL = process.env.CRM_URL || 'https://porovnanienergii.cz/api/send-msg';
 const CRM_ENABLED = process.env.CRM_ENABLED !== '0';
-const SOURCE = process.env.LEAD_SOURCE || 'porovnanienergii.cz';
+const SOURCE = process.env.LEAD_SOURCE || 'zmenitdodavatele';
 const SITE_TAG = process.env.SITE_TAG || 'zmenitdodavatele-web';
 // tajná cesta ke statistikám (není to heslo do žádného systému, jen neveřejná adresa přehledu)
 const STATS_PATH = '/' + (process.env.STATS_PATH || readOrCreate(path.join(DATA, 'stats-path.txt'), () => 'statistiky-' + crypto.randomBytes(6).toString('hex')));

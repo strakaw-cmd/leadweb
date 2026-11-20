@@ -4,6 +4,13 @@
   const val = (f, n) => { const v = (f.elements[n]?.value || '').replace(/\s/g, '').replace(',', '.'); return v === '' ? null : Number(v); };
   const utm = {}; const sp = new URLSearchParams(location.search);
   for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid']) { const v = sp.get(k) || sessionStorage.getItem('u_' + k); if (v) { utm[k] = v; sessionStorage.setItem('u_' + k, v); } }
+  // První vstupní stránka a odkazující doména v rámci návštěvy (pro měření zdroje leadu).
+  let landing = '', ref = '';
+  try {
+    landing = sessionStorage.getItem('u_landing') || location.pathname; sessionStorage.setItem('u_landing', landing);
+    const r = document.referrer ? new URL(document.referrer).hostname : '';
+    ref = sessionStorage.getItem('u_ref') || (r && r !== location.hostname ? r : 'direct'); sessionStorage.setItem('u_ref', ref);
+  } catch {}
 
   // ---- měření se souhlasem (aktivní jen když build vložil window.TRACK; jinak vše níže nic nedělá) ----
   const T = window.TRACK || null, CK = 'consent_v1';
@@ -129,9 +136,14 @@
     const phone = d.phone.replace(/[\s-]+/g, '').replace(/^(?:\+|00)420(?=\d{9}$)/, '');
     const note = d.note.slice(0, 1000), camp = d.campaign === 'zdrazeni-cez';
     const message = [`Jméno: ${d.name}`, `Telefon: ${phone}`, `E-mail: ${d.email}`, `Typ odběrného místa: ${SEG[d.segment]}`, `Komodita: ${KOM[d.komodita]}`, `Poznámka: ${note || '-'}`,
-      ...(camp ? ['Kampaň: zdrazeni-cez', `Odpovědi z kvízu: ${String(d.quiz || '-').slice(0, 600)}`] : []), `Stránka: ${d.page || '-'}`, `Zdroj: ${tag} (obsahový web)`, `Souhlas GDPR: ano (${t})`, `ID na webu: ${id}`].join('\n');
-    const body = new URLSearchParams({ h: '1', name: d.name.slice(0, 120), email: d.email.slice(0, 160), t: phone, subject: `${camp ? '[Zdražení ČEZ – neurčitá smlouva] ' : ''}Lead z webu ${tag}: ${SEG[d.segment]} – ${KOM[d.komodita]}`, promo: 'porovnanienergii.cz', marketing_optin: '0', message });
+      ...(camp ? ['Kampaň: zdrazeni-cez', `Odpovědi z kvízu: ${String(d.quiz || '-').slice(0, 600)}`] : []), `Stránka: ${d.page || '-'}`, `Vstupní stránka: ${d.landing || '-'}`, `Přišel z: ${d.ref || 'direct'}${d.utm && d.utm.utm_source ? ` (utm_source=${d.utm.utm_source})` : ''}`, `Zdroj: ${tag} (zmenitdodavatele.cz)`, `Souhlas GDPR: ano (${t})`, `ID na webu: ${id}`].join('\n');
+    // promo = zdroj webu (jako nejsemosel.cz posílá 'nejsemosel'); v e-mailu z CRM je jako „akce: zmenitdodavatele“.
+    const body = new URLSearchParams({ h: '1', name: d.name.slice(0, 120), email: d.email.slice(0, 160), t: phone, subject: `${camp ? '[Zdražení ČEZ – neurčitá smlouva] ' : ''}Lead z webu ${tag}: ${SEG[d.segment]} – ${KOM[d.komodita]}`, promo: 'zmenitdodavatele', marketing_optin: '0', message });
     for (const [k, v] of Object.entries(d.utm || {})) body.append(k, String(v).slice(0, 200));
+    // utm_* klíče CRM přidá do řádku „tracking:“ – web, vstupní stránka a odkud návštěvník přišel (bez osobních údajů).
+    body.append('utm_site', 'zmenitdodavatele.cz');
+    if (d.landing) body.append('utm_landing', d.landing.slice(0, 200));
+    body.append('utm_ref', (d.ref || 'direct').slice(0, 100));
     const r = await fetch('https://porovnanienergii.cz/api/send-msg', { method: 'POST', body, headers: { Accept: 'application/json' } });
     const j = await r.json().catch(() => null);
     return r.ok && Array.isArray(j) && j.length === 3;
@@ -149,7 +161,7 @@
     f.addEventListener('submit', async (e) => {
       e.preventDefault();
       const d = { name: f.elements.name.value.trim(), phone: f.elements.phone.value.trim(), email: f.elements.email.value.trim(), segment: f.elements.segment.value, komodita: f.elements.komodita.value,
-        note: f.elements.note.value.trim(), website: f.elements.website.value, gdpr: f.elements.gdpr.checked, page: location.pathname, utm, ts: t0, campaign: f.dataset.campaign || '', quiz: f.dataset.campaign ? (quizText || 'kvíz nevyplněn') : '' };
+        note: f.elements.note.value.trim(), website: f.elements.website.value, gdpr: f.elements.gdpr.checked, page: location.pathname, landing, ref, utm, ts: t0, campaign: f.dataset.campaign || '', quiz: f.dataset.campaign ? (quizText || 'kvíz nevyplněn') : '' };
       const errs = {};
       if (d.name.length < 2) errs.name = 'Vyplňte jméno.';
       if (!/^\d{9}$/.test(d.phone.replace(/[\s-]+/g, '').replace(/^(?:\+|00)420(?=\d{9}$)/, ''))) errs.phone = 'Telefon zadejte jako 9 číslic (případně s +420).';

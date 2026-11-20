@@ -1,6 +1,6 @@
 # Kampaň „Zdražení ČEZ od 1. 1. 2027“ – plán, nastavení a texty
 
-Stav k 12. 11. 2026. Funnel běží na <https://strakaw-cmd.github.io/leadweb/zdrazeni-cez/> (repo `strakaw-cmd/leadweb`).
+Stav k 20. 11. 2026. Funnel běží na <https://zmenitdodavatele.cz/zdrazeni-cez/> (repo `strakaw-cmd/leadweb`, GitHub Pages, HTTPS vynucené).
 Všechna fakta o zdražení jsou v `src/cez.mjs` (ceníky ČEZ 2026 vs. 2027, § 11a energetického zákona). Do reklam a na web nepíšeme nic jiného.
 
 **Okno kampaně je krátké:** výpověď bez sankce stačí odeslat do **22. 12. 2026** (domácnosti a podnikající fyzické osoby). ČEZ musí zdražení oznámit do **2. 12. 2026** – kolem toho data čekejte nejvíc hledání. Všechny placené kampaně s textem o „odchodu bez sankce“ **musí skončit 22. 12. 2026 ve 23:59**.
@@ -182,7 +182,7 @@ Připnutí: v A1/A2 připnout na pozici 1 nadpis s tématem (např. „Zdražen�
 
 #### A1 Zdražení ČEZ (domácnosti)
 
-Cílová URL: `https://strakaw-cmd.github.io/leadweb/zdrazeni-cez/domacnost?utm_source=google&utm_medium=cpc&utm_campaign=zdrazeni-cez-domacnost&utm_content=domacnost-zdrazeni&utm_term={keyword}`  
+Cílová URL: `https://zmenitdodavatele.cz/zdrazeni-cez/domacnost?utm_source=google&utm_medium=cpc&utm_campaign=zdrazeni-cez-domacnost&utm_content=domacnost-zdrazeni&utm_term={keyword}`  
 Sklik: stejná URL s `utm_source=seznam&utm_campaign=zdrazeni-cez-domacnost-sklik`
 
 **RSA 1**
@@ -235,7 +235,7 @@ Sklik: stejná URL s `utm_source=seznam&utm_campaign=zdrazeni-cez-domacnost-skli
 
 #### A2 Výpověď ČEZ bez sankce (domácnosti)
 
-Cílová URL: `https://strakaw-cmd.github.io/leadweb/zdrazeni-cez/domacnost?utm_source=google&utm_medium=cpc&utm_campaign=zdrazeni-cez-domacnost&utm_content=domacnost-vypoved&utm_term={keyword}`  
+Cílová URL: `https://zmenitdodavatele.cz/zdrazeni-cez/domacnost?utm_source=google&utm_medium=cpc&utm_campaign=zdrazeni-cez-domacnost&utm_content=domacnost-vypoved&utm_term={keyword}`  
 Sklik: stejná URL s `utm_source=seznam&utm_campaign=zdrazeni-cez-domacnost-sklik`
 
 **RSA 1**
@@ -288,7 +288,7 @@ Sklik: stejná URL s `utm_source=seznam&utm_campaign=zdrazeni-cez-domacnost-skli
 
 #### A3 Změna dodavatele (obecné, domácnosti)
 
-Cílová URL: `https://strakaw-cmd.github.io/leadweb/zdrazeni-cez?utm_source=google&utm_medium=cpc&utm_campaign=zdrazeni-cez-domacnost&utm_content=domacnost-zmena&utm_term={keyword}`  
+Cílová URL: `https://zmenitdodavatele.cz/zdrazeni-cez/?utm_source=google&utm_medium=cpc&utm_campaign=zdrazeni-cez-domacnost&utm_content=domacnost-zmena&utm_term={keyword}`  
 Sklik: stejná URL s `utm_source=seznam&utm_campaign=zdrazeni-cez-domacnost-sklik`
 
 **RSA 1**
@@ -341,7 +341,7 @@ Sklik: stejná URL s `utm_source=seznam&utm_campaign=zdrazeni-cez-domacnost-skli
 
 #### B1 Zdražení ČEZ (podnikatelé, firmy)
 
-Cílová URL: `https://strakaw-cmd.github.io/leadweb/zdrazeni-cez/firmy?utm_source=google&utm_medium=cpc&utm_campaign=zdrazeni-cez-firmy&utm_content=firmy-zdrazeni&utm_term={keyword}`  
+Cílová URL: `https://zmenitdodavatele.cz/zdrazeni-cez/firmy?utm_source=google&utm_medium=cpc&utm_campaign=zdrazeni-cez-firmy&utm_content=firmy-zdrazeni&utm_term={keyword}`  
 Sklik: stejná URL s `utm_source=seznam&utm_campaign=zdrazeni-cez-firmy-sklik`
 
 **RSA 1**
@@ -394,7 +394,7 @@ Sklik: stejná URL s `utm_source=seznam&utm_campaign=zdrazeni-cez-firmy-sklik`
 
 #### B2 SVJ a bytové domy
 
-Cílová URL: `https://strakaw-cmd.github.io/leadweb/zdrazeni-cez/firmy?utm_source=google&utm_medium=cpc&utm_campaign=zdrazeni-cez-firmy&utm_content=firmy-svj&utm_term={keyword}`  
+Cílová URL: `https://zmenitdodavatele.cz/zdrazeni-cez/firmy?utm_source=google&utm_medium=cpc&utm_campaign=zdrazeni-cez-firmy&utm_content=firmy-svj&utm_term={keyword}`  
 Sklik: stejná URL s `utm_source=seznam&utm_campaign=zdrazeni-cez-firmy-sklik`
 
 **RSA 1**
@@ -469,14 +469,14 @@ Strukturovaný úryvek „Služby“: Srovnání nabídek · Kontrola smlouvy ·
 |---|---|
 | Google A1 | `…/zdrazeni-cez/domacnost?utm_source=google&utm_medium=cpc&utm_campaign=zdrazeni-cez-domacnost&utm_content=domacnost-zdrazeni&utm_term={keyword}` |
 | Google A2 | `…/zdrazeni-cez/domacnost?utm_source=google&utm_medium=cpc&utm_campaign=zdrazeni-cez-domacnost&utm_content=domacnost-vypoved&utm_term={keyword}` |
-| Google A3 | `…/zdrazeni-cez?utm_source=google&utm_medium=cpc&utm_campaign=zdrazeni-cez-domacnost&utm_content=domacnost-zmena&utm_term={keyword}` |
+| Google A3 | `…/zdrazeni-cez/?utm_source=google&utm_medium=cpc&utm_campaign=zdrazeni-cez-domacnost&utm_content=domacnost-zmena&utm_term={keyword}` |
 | Google B1 | `…/zdrazeni-cez/firmy?utm_source=google&utm_medium=cpc&utm_campaign=zdrazeni-cez-firmy&utm_content=firmy-zdrazeni&utm_term={keyword}` |
 | Google B2 | `…/zdrazeni-cez/firmy?utm_source=google&utm_medium=cpc&utm_campaign=zdrazeni-cez-firmy&utm_content=firmy-svj&utm_term={keyword}` |
 | Sklik (všechny) | stejně, jen `utm_source=seznam` a `utm_campaign=…-sklik`; `utm_term` v Skliku přes `{keyword}` podle nápovědy Skliku |
 | Meta domácnosti | `…/zdrazeni-cez/domacnost?utm_source=facebook&utm_medium=paid_social&utm_campaign=zdrazeni-cez-domacnost&utm_content={{ad.name}}` |
 | Meta podnikatelé | `…/zdrazeni-cez/firmy?utm_source=facebook&utm_medium=paid_social&utm_campaign=zdrazeni-cez-firmy&utm_content={{ad.name}}` |
 
-`…` = dnes `https://strakaw-cmd.github.io/leadweb`, po koupi domény `https://www.zmenitdodavatele.cz`. V Google Ads zapnout **automatické označování** (gclid) – web gclid i UTM ukládá a posílá s leadem do CRM, takže u každého leadu v CRM uvidíte zdroj.
+`…` = `https://zmenitdodavatele.cz` (od 20. 11. 2026; stará adresa github.io přesměrovává). V Google Ads zapnout **automatické označování** (gclid) – web gclid i UTM ukládá a posílá s leadem do CRM, takže u každého leadu v CRM uvidíte zdroj.
 
 ### 4.5 Rozpočet
 

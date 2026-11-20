@@ -34,13 +34,23 @@ const calcs = [
   ['uspora-plyn', 'Kalkulačka úspory za plyn'],
   ['termin-vypovedi', 'Kdy podat výpověď'],
 ];
-function layout({ title, desc, body, canonical = '', funnel = false }) {
+// Ověření vlastnictví (Google Search Console / Seznam Webmaster) – hodnota z proměnné repozitáře, bez ní se nic nevkládá.
+const GSC = (process.env.GSC_VERIFICATION || '').trim().replace(/[^\w-]/g, '');
+const SEZNAM_WMT = (process.env.SEZNAM_VERIFICATION || '').trim().replace(/[^\w-]/g, '');
+const verifyHead = (GSC ? `<meta name="google-site-verification" content="${GSC}">` : '') + (SEZNAM_WMT ? `<meta name="seznam-wmt" content="${SEZNAM_WMT}">` : '');
+const ORG = { '@type': 'Organization', '@id': `${SITE_URL}/#org`, name: 'PorovnáníEnergií.cz', legalName: 'M & S fair agency s.r.o.', url: 'https://porovnanienergii.cz/', telephone: '+420737225960', email: CONTACT_EMAIL,
+  contactPoint: { '@type': 'ContactPoint', telephone: '+420737225960', contactType: 'customer service', areaServed: 'CZ', availableLanguage: 'cs' } };
+const ld = (o) => `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', ...o })}</script>`;
+function layout({ title, desc, body, canonical = '', funnel = false, noindex = false, type = 'website', head = '' }) {
+  const url = SITE_URL ? `${SITE_URL}${canonical}` : '';
+  const og = SITE_URL ? `<meta property="og:type" content="${type}"><meta property="og:site_name" content="${BRAND}"><meta property="og:locale" content="cs_CZ"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${url}"><meta property="og:image" content="${SITE_URL}/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image">\n` : '';
   return `<!doctype html><html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title><meta name="description" content="${esc(desc)}">
-${SITE_URL ? `<link rel="canonical" href="${SITE_URL}${canonical}">` : '<meta name="robots" content="noindex">'}
+${SITE_URL && !noindex ? `<link rel="canonical" href="${url}">` : '<meta name="robots" content="noindex">'}
+${og}${verifyHead}${head}
 <meta name="theme-color" content="#0a1628"><link rel="preload" href="/fonts/inter-cs.woff2" as="font" type="font/woff2" crossorigin>
 ${trackHead}<link rel="stylesheet" href="/style.css"><link rel="icon" href="/favicon.svg" type="image/svg+xml"></head><body>
-<header class="top"><div class="wrap"><a class="logo" href="/"><span class="logo-mark">${ic('zap')}</span>${BRAND}</a><nav><a href="/zdrazeni-cez">Zdražení ČEZ</a><a class="nav-x" href="/pruvodce/">Průvodci</a><a class="nav-x" href="/kalkulacky/">Kalkulačky</a><a class="btn sm" href="${funnel ? '#poptavka' : '/#poptavka'}">Chci nabídku</a></nav></div></header>
+<header class="top"><div class="wrap"><a class="logo" href="/"><span class="logo-mark">${ic('zap')}</span>${BRAND}</a><nav><a href="/zdrazeni-cez/">Zdražení ČEZ</a><a class="nav-x" href="/pruvodce/">Průvodci</a><a class="nav-x" href="/kalkulacky/">Kalkulačky</a><a class="btn sm" href="${funnel ? '#poptavka' : '/#poptavka'}">Chci nabídku</a></nav></div></header>
 <main class="wrap">${body}</main>
 <footer><div class="wrap"><p class="f-brand"><span class="logo-mark">${ic('zap')}</span><span><strong>${BRAND}</strong> – průvodce změnou dodavatele elektřiny a plynu. Provozovatel: ${OPERATOR}.</span></p>
 <p class="f-links"><a href="/ochrana-osobnich-udaju">Ochrana osobních údajů</a> · ${TRACKING ? '<a href="#cookies" data-consent-open>Nastavení cookies</a>' : 'Web nepoužívá cookies ani reklamní sledování.'} · Ceny konkrétních dodavatelů neuvádíme – pro nezávislé srovnání veřejných nabídek viz <a href="https://srovnavac.eru.gov.cz/" target="_blank" rel="noopener">srovnávač ERÚ</a>.</p></div></footer>
@@ -82,11 +92,12 @@ function cookiePolicy() {
 // ---------- domů ----------
 const artCards = articles.map((a) => `<a class="card" href="/pruvodce/${a.slug}"><span class="card-ic">${ic('book')}</span><h3>${esc(a.title)}</h3><p>${esc(a.desc)}</p></a>`).join('');
 write('index.html', layout({ title: `${BRAND} – průvodce změnou dodavatele elektřiny a plynu`, canonical: '/',
+  head: ld({ '@graph': [ORG, { '@type': 'WebSite', '@id': `${SITE_URL}/#web`, name: BRAND, url: `${SITE_URL}/`, inLanguage: 'cs', publisher: { '@id': `${SITE_URL}/#org` } }] }),
   desc: 'Jak přejít k jinému dodavateli elektřiny a plynu: lhůty výpovědi, konec fixace, potřebné dokumenty, kalkulačky úspory. Pro domácnosti, firmy i SVJ.',
   body: `<section class="hero band"><div class="hero-grid home-grid"><div class="hero-intro"><p class="eyebrow">${ic('zap')} Elektřina a plyn · domácnosti, firmy, SVJ</p><h1>Změna dodavatele elektřiny a plynu bez chyb</h1>
 <p class="lead-p">Srozumitelní průvodci a kalkulačky: kdy můžete smlouvu vypovědět, kolik reálně ušetříte a co si připravit. Pro domácnosti, firmy i SVJ.</p>
 <p class="cta-row"><a class="btn btn-lg" href="/kalkulacky/termin-vypovedi">${ic('calendar')} Spočítat termín výpovědi</a> <a class="btn ghost btn-lg" href="/kalkulacky/uspora-elektrina">${ic('calc')} Spočítat úsporu</a></p></div>
-<div class="cezcard"><p class="eyebrow warn">${ic('alert')} Zdražení ČEZ od 1. 1. 2027</p>${deadlineBox()}${cezCallout()}<a class="btn btn-block" href="/zdrazeni-cez">Týká se mě to? ${ic('arrow')}</a></div></div></section>
+<div class="cezcard"><p class="eyebrow warn">${ic('alert')} Zdražení ČEZ od 1. 1. 2027</p>${deadlineBox()}${cezCallout()}<a class="btn btn-block" href="/zdrazeni-cez/">Týká se mě to? ${ic('arrow')}</a></div></div></section>
 <section class="sec"><h2>Kalkulačky</h2><div class="cards">${calcs.map(([s, t], i) => `<a class="card" href="/kalkulacky/${s}"><span class="card-ic">${ic(['zap', 'trend', 'calendar'][i])}</span><h3>${t}</h3></a>`).join('')}</div></section>
 <section class="sec"><h2>Průvodci</h2><div class="cards">${artCards}</div></section>
 <section class="facts"><h2>Tři věci, které je dobré vědět</h2><ul class="checks">
@@ -102,6 +113,8 @@ for (const a of articles) {
   const src = a.sources.map((k) => `<li><a href="${SOURCES[k][1]}" target="_blank" rel="noopener">${SOURCES[k][0]}</a></li>`).join('');
   const others = articles.filter((x) => x.slug !== a.slug).slice(0, 4).map((x) => `<li><a href="/pruvodce/${x.slug}">${esc(x.title)}</a></li>`).join('');
   write(`pruvodce/${a.slug}.html`, layout({ title: `${a.title} | ${BRAND}`, desc: a.desc, canonical: `/pruvodce/${a.slug}`,
+    type: 'article', head: ld({ '@graph': [{ '@type': 'Article', headline: a.title, description: a.desc, inLanguage: 'cs', mainEntityOfPage: `${SITE_URL}/pruvodce/${a.slug}`, image: `${SITE_URL}/og.png`, dateModified: '2026-11-12', author: { '@id': `${SITE_URL}/#org` }, publisher: { '@id': `${SITE_URL}/#org` } }, ORG,
+      { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Úvod', item: `${SITE_URL}/` }, { '@type': 'ListItem', position: 2, name: 'Průvodci', item: `${SITE_URL}/pruvodce/` }, { '@type': 'ListItem', position: 3, name: a.title }] }] }),
     body: `<article class="art"><p class="crumbs"><a href="/pruvodce/">Průvodci</a></p><h1>${esc(a.title)}</h1>${a.body}
 <aside class="src"><h2>Zdroje</h2><ul>${src}</ul><p class="muted">Text má informativní charakter a nenahrazuje právní poradenství. Rozhodující je znění vaší smlouvy a platných předpisů. Aktualizováno 12. 11. 2026.</p></aside>
 <aside><h2>Další průvodci</h2><ul>${others}</ul></aside></article>${leadForm()}` }));
@@ -151,14 +164,15 @@ write('ochrana-osobnich-udaju.html', layout({ title: `Ochrana osobních údajů 
 <h2>Jak dlouho</h2><p>Po dobu nezbytnou k vyřízení poptávky, nejdéle 2 roky od posledního kontaktu, pokud nevznikne smluvní vztah.</p>
 <h2>Vaše práva</h2><p>Máte právo souhlas kdykoli odvolat, požadovat přístup k údajům, jejich opravu, výmaz, omezení zpracování a přenositelnost a podat stížnost u Úřadu pro ochranu osobních údajů (uoou.gov.cz).</p>
 <h2>Cookies a měření návštěvnosti</h2>${TRACKING ? cookiePolicy() : `<p>Web nepoužívá cookies${STATIC ? ' ani nástroje pro měření návštěvnosti.' : '. Návštěvnost měříme anonymně na vlastním serveru: ukládáme navštívenou stránku, odkazující doménu a denně se měnící anonymní identifikátor, ze kterého nelze zpětně zjistit IP adresu ani vás identifikovat.'}</p>`}</article>` }));
-write('dekujeme.html', layout({ title: `Děkujeme | ${BRAND}`, desc: 'Děkujeme za zprávu.', body: `<section class="thanks"><span class="okmark">${ic('check')}</span><h1 data-thanks-page>Děkujeme</h1><p class="lead-p">Vaše údaje máme. Ozveme se vám zpravidla do jednoho pracovního dne.</p><p><a class="btn" href="/pruvodce/">Zatím si přečtěte naše průvodce ${ic('arrow')}</a></p></section>` }));
-write('404.html', layout({ title: `Stránka nenalezena | ${BRAND}`, desc: '', body: `<section class="thanks"><h1>Tuhle stránku jsme nenašli</h1><p><a class="btn" href="/">Zpět na úvod</a></p></section>` }));
+write('dekujeme.html', layout({ title: `Děkujeme | ${BRAND}`, noindex: true, desc: 'Děkujeme za zprávu.', body: `<section class="thanks"><span class="okmark">${ic('check')}</span><h1 data-thanks-page>Děkujeme</h1><p class="lead-p">Vaše údaje máme. Ozveme se vám zpravidla do jednoho pracovního dne.</p><p><a class="btn" href="/pruvodce/">Zatím si přečtěte naše průvodce ${ic('arrow')}</a></p></section>` }));
+write('404.html', layout({ title: `Stránka nenalezena | ${BRAND}`, desc: '', noindex: true, body: `<section class="thanks"><h1>Tuhle stránku jsme nenašli</h1><p><a class="btn" href="/">Zpět na úvod</a></p></section>` }));
 write('robots.txt', SITE_URL ? `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}/sitemap.xml\n` : 'User-agent: *\nDisallow: /\n');
 const funnelUrls = buildFunnel({ write, layout, leadForm, esc });
+const LASTMOD = new Date().toISOString().slice(0, 10);
 const urls = [...funnelUrls, '/', '/pruvodce/', '/kalkulacky/', ...calcs.map(([s]) => `/kalkulacky/${s}`), ...articles.map((a) => `/pruvodce/${a.slug}`), '/ochrana-osobnich-udaju'];
-write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((u) => `<url><loc>${SITE_URL}${u}</loc></url>`).join('')}</urlset>`);
+write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((u) => `<url><loc>${SITE_URL}${u}</loc><lastmod>${LASTMOD}</lastmod></url>`).join('')}</urlset>`);
 write('favicon.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#0a1628"/><path d="M13 3 6 13h5l-1 8 7-10h-5z" fill="#1ed68a"/></svg>');
-for (const f of ['style.css', 'app.js']) fs.copyFileSync(path.join(ROOT, 'src', f), path.join(OUT, f));
+for (const f of ['style.css', 'app.js', 'og.png']) fs.copyFileSync(path.join(ROOT, 'src', f), path.join(OUT, f));
 fs.mkdirSync(path.join(OUT, 'fonts'), { recursive: true });
 for (const f of fs.readdirSync(path.join(ROOT, 'src', 'fonts'))) fs.copyFileSync(path.join(ROOT, 'src', 'fonts', f), path.join(OUT, 'fonts', f));
 if (STATIC) write('.nojekyll', '');

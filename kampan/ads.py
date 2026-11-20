@@ -1,6 +1,6 @@
 # Zdroj textů reklam (Google Ads / Sklik RSA). Kontrola délek: python3 kampan/ads.py  → vypíše markdown a chyby.
 import sys
-D = 'https://strakaw-cmd.github.io/leadweb'  # po koupi domény: https://www.zmenitdodavatele.cz
+D = 'https://zmenitdodavatele.cz'
 G = {
  'A1 Zdražení ČEZ (domácnosti)': ('/zdrazeni-cez/domacnost', 'domacnost-zdrazeni', [
   (['Zdražení ČEZ od 1. 1. 2027', 'Elektřina +330 Kč/MWh s DPH', 'Týká se vás zdražení? Ověřte', 'Smlouva bez fixace? Pozor', 'Výpověď stačí do 22. 12.', 'Test o 3 otázkách zdarma'],
@@ -18,7 +18,7 @@ G = {
   (['Lhůta končí 22. 12. 2026', 'Bez fixace? Můžete odejít', 'Domácnosti a OSVČ bez pokuty', 'Poradíme zdarma, Po–Pá 8–17', 'Zprostředkovatel ERÚ od 2009', 'Ověřte to za 3 otázky'],
    ['Zprostředkovatel registrovaný u ERÚ. Poradíme, jestli odchod dává smysl, a porovnáme ceny.', 'Pokud vám nová cena vyhovuje, nemusíte dělat nic. Rozhodnutí je jen na vás.']),
  ]),
- 'A3 Změna dodavatele (obecné, domácnosti)': ('/zdrazeni-cez', 'domacnost-zmena', [
+ 'A3 Změna dodavatele (obecné, domácnosti)': ('/zdrazeni-cez/', 'domacnost-zmena', [
   (['Změna dodavatele elektřiny', 'Porovnejte 20+ dodavatelů', 'Srovnání zdarma a nezávazně', 'Vyřídíme změnu za vás', 'Zprostředkovatel ERÚ', 'Dodávka se nepřeruší'],
    ['Porovnáme nabídky pro vaši spotřebu a vyřídíme změnu dodavatele. Za naši službu neplatíte.', 'Registrovaný zprostředkovatel ERÚ, na trhu s energiemi od roku 2009.']),
   (['Máte ČEZ bez fixace?', 'Od 1. 1. 2027 zaplatíte víc', 'Ověřte to třemi otázkami', 'Změna dodavatele zdarma', 'Na trhu od roku 2009', 'Nezávazná nabídka'],
